@@ -1,0 +1,22 @@
+language: python
+python:
+  - 3.7
+matrix:  # python 3.7 workaround: https://github.com/travis-ci/travis-ci/issues/9815
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: true
+install:
+  - pip install -e .
+  - pip list # list installed package versions
+script:
+  - pytest
+
+notifications:
+  slack:
+    if: |
+      branch = master AND \
+      type IN (push, api, cron)
+    on_success: change
+    on_failure: always
+    secure: "i0CbsJzTSIprjWpn9WEwggmEGNh9kgk5W7fWXKB8aOzuEMXD+go+Ucsp8xP6abkc4MbluKSJxHrv2k5Fx8+Q/t8BwQseZ5GsZ3EGsdnQ5yngaTuqhj8KHwejpgtAyUIK/Mw30NNS861GRLTQV5p+3BTB7mrptcELniopvpByYKXCzc/q6Ra3LBH5B9WJ9Z42MJ1P9Rj9Tm32lWbdWCQOiW/On8YVMiDUpKcb/ZugyZeHM0trS1morK1In2OlkreW4bF/OvHy/vqh++1a9YZQJnbhN2XGT12Jlj4sqULijtilXxWFbrqvyuLeXe5WpfM7oyfkVTBn3aOQAaKcWnmNzL6d00pFPqXY7KEqIsl7A0xBVl577kRbZuGWHezaSfT1PZ58vY8BBm4O+UzuyDyUm/7Sd5bss/bklqfNhG5ZmaM3FCh/CO1crtZtpdttga/6OyI+TZT7rw9LaoR3XOVged8QMaQdiaGOBgp2mqALK0sGP/GTfv/xwf7l/Tugit/W7Um7ctXuvSvtfFlTPBqE4sSrJjeVDuC6iNrvS+rOystu5SQmCI8vS78bqw67QvsOo2h1KLclfSUMT5KNeF9BXrus7ZsqfP019fvDSAfCCreSmMNaNZ6oGESgfwYsKiGV4yqXijsq8nbtInPdQ4JqnT/LmaRGWshq6A36b/Alr7c="
