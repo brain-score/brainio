@@ -2,6 +2,7 @@ import hashlib
 import logging
 from pathlib import Path
 
+import intake
 import numpy as np
 import pandas as pd
 
@@ -10,11 +11,11 @@ _logger = logging.getLogger(__name__)
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
 
-path = Path(__file__).parent / "lookup.csv"
-_logger.debug(f"Loading lookup from {path}")
-print(f"Loading lookup from {path}")  # print because logging usually isn't set up at this point during import
-data = pd.read_csv(path)
-
+# path = Path(__file__).parent / "lookup.csv"
+# _logger.debug(f"Loading lookup from {path}")
+# print(f"Loading lookup from {path}")  # print because logging usually isn't set up at this point during import
+# data = pd.read_csv(path)
+cat = intake.open_catalog('temp.yaml') # TODO replace with intake catalog system
 
 def list_stimulus_sets():
     stimuli_rows = data[data['lookup_type'] == TYPE_STIMULUS_SET]
