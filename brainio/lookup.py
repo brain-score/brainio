@@ -2,18 +2,30 @@ import hashlib
 import logging
 from pathlib import Path
 
+import entrypoints
 import numpy as np
 import pandas as pd
 
 _logger = logging.getLogger(__name__)
 
+ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
 
-path = Path(__file__).parent / "lookup.csv"
-_logger.debug(f"Loading lookup from {path}")
-print(f"Loading lookup from {path}")  # print because logging usually isn't set up at this point during import
-data = pd.read_csv(path)
+
+def get_lookups():
+    lookups = entrypoints.get_group_named(ENTRYPOINT)
+    dfs = []
+    for k, v in lookups.items():
+        df = v.load()
+        df["lookup_source"] = k
+        dfs.append(df)
+    return pd.concat(dfs, ignore_index=True)
+
+
+_logger.debug(f"Loading lookup from entrypoints")
+print(f"Loading lookup from entrypoints")  # print because logging usually isn't set up at this point during import
+data = get_lookups()
 
 
 def list_stimulus_sets():

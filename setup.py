@@ -12,6 +12,7 @@ requirements = [
     "xarray==0.16.1", # a bug introduced in 0.16.2 causes align to handle MultiIndex wrong
     # test_requirements
     "pytest",
+    "entrypoints",
 ]
 
 setup(
@@ -37,4 +38,9 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
+    entry_points={
+        'brainio_lookups': [
+            'brainio_test = brainio.entrypoint:brainio_test',
+        ],
+    },
 )
