@@ -1,16 +1,26 @@
 language: python
-python:
-  - 3.7
-matrix:  # python 3.7 workaround: https://github.com/travis-ci/travis-ci/issues/9815
+matrix:
   include:
-    - python: 3.7
-      dist: xenial
-      sudo: true
+  - python: '3.7'
+    dist: xenial
+    sudo: true
+  - name: 3.7 public
+    python: '3.7'
+  - name: 3.7 private
+    python: '3.7'
+    env:
+    - PRIVATE_ACCESS=1
+    - secure: "CzOQmNMkHXavXihZWYL+G5sbdYq8KLrBWnorZEPhvsKDIKy1hhORCc+pAMXg+bjrPRXfRqZnX0XRRCoZbD9Mo9VvA1hIsV7i5bBbjMoyBTUn3vED0CQNBCgjaA2rLsHlJMtYdLoCOOAiaU+rTu2xxf0grjgKARzLpVNENmPgP0YqiXPEc7rdY3cifalCBpHTQgvu7Z6FR1yAdRsMfskTIwPa/GlTCNF8ZR+efuobQJrtApfzBgiH7+NJI5Aq6u8PWD6LqONCm2ut0NKL7BMNRMgwS3pjERr2spRWrLiCz05Y4icaUmhajPjCl3kMIjuHdw1OgvwQHuSW9hcgt0AXZoIC8qJqg5V39LrsYYPd5/sg7vcTZ+VRhWF5zDBMvTO0PFt36tpj9xnr2ATIPlp1ACXwi+fGPkPAJp3ZIHbl36lji6sB4WLwIISongseizqTAHKowmpCGqEL6TZB65/MThWBeccRNB1N4a3wG34Eu7n1XXqecK1c+68JO98fOQxwmQ/utOkQRcVQzmGyARUk7WyupoqMmAZbWxOJ5AzyXPiK2OGXmiVJSwlMQKtF7eqkLs8wWeQD+zQj2qoSqF45LdFQsww19W2wC0wHuTV6nDBaKB59lY5qFufDWT+Gh06jLk8UpgYANh9f3fH5ZgUKfnH7I17StuDEpxCZ1kxVKcA="
+    - secure: "kM29lJW0Dlye7uJ/eujV8kU36p8ursxpqSMu6fUg4CW6jU4novtj1wP5MxvNQky5ANem9MGMwsAvbwc236EodEnO6Dt3XR6PEcuXZurjmRnhK/Ri5aHt++gzc9OYDqOmo31Dgkn4tTD45L4Ko/DvSCoOC6CYxbQZReGoWSSdipV7yh/EjZooIejxqNFvC60D3Xz8puFNY/FO8bwrBAzy8hVRZm9kLlDQNqUfab7n+QUs1GY+SCBNYWHlpf+2Z2x5SHy48Sp+P8DYyDMtdE9V45L+5m+zGaXKhYx+779P1QBTe1WqgCRfHP/QY7+uxqC48BJ3TWRSDJYGdH6L4Qy8Z5aq6d+zQM7+txk0OI5PrNBSCUJpGlbl/fjv+2+NRjemkUXN6J52KfL8tF95l7eu7TgJfSf72ak1IggtSO9H+3hKE0hgLHQ7L6gxR2NWnqiBx3EL5t2yFOKYQoQ70PfAcvY3YPx2yZ7qjeu8/f7B4FUXko4BCJ15eOS+zWV241R2otAiNP8kFbhqnsQxxy91Mn1XvJHUZVWi/wwVEzCkzoDUV7EJ2u6E0JXORULzZJTxpQT469/rtDTtSQX1Ok9v5NMp5Zl27u1ay49FuWCZ7hxTsknzV0P4/7oNhKYbokR3veGfmdWCnye/oVeyb7TMU3JRk3kZjFf+qk85qqxbaNg="
+    - AWS_DEFAULT_REGION=us-east-1
+before_install:
+- pip install --upgrade pip
 install:
-  - pip install -e .
-  - pip list # list installed package versions
+- pip install .
+- pip list # list installed package versions
 script:
-  - pytest
+- if [ "$PRIVATE_ACCESS" = 1 ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then pytest -m "not memory_intense and not slow"; fi
+- if [ "$PRIVATE_ACCESS" != 1 ]; then pytest -m "not memory_intense and not private_access and not slow"; fi
 
 notifications:
   slack:
@@ -18,5 +28,5 @@ notifications:
       branch = master AND \
       type IN (push, api, cron)
     on_success: change
-    on_failure: always
-    secure: "i0CbsJzTSIprjWpn9WEwggmEGNh9kgk5W7fWXKB8aOzuEMXD+go+Ucsp8xP6abkc4MbluKSJxHrv2k5Fx8+Q/t8BwQseZ5GsZ3EGsdnQ5yngaTuqhj8KHwejpgtAyUIK/Mw30NNS861GRLTQV5p+3BTB7mrptcELniopvpByYKXCzc/q6Ra3LBH5B9WJ9Z42MJ1P9Rj9Tm32lWbdWCQOiW/On8YVMiDUpKcb/ZugyZeHM0trS1morK1In2OlkreW4bF/OvHy/vqh++1a9YZQJnbhN2XGT12Jlj4sqULijtilXxWFbrqvyuLeXe5WpfM7oyfkVTBn3aOQAaKcWnmNzL6d00pFPqXY7KEqIsl7A0xBVl577kRbZuGWHezaSfT1PZ58vY8BBm4O+UzuyDyUm/7Sd5bss/bklqfNhG5ZmaM3FCh/CO1crtZtpdttga/6OyI+TZT7rw9LaoR3XOVged8QMaQdiaGOBgp2mqALK0sGP/GTfv/xwf7l/Tugit/W7Um7ctXuvSvtfFlTPBqE4sSrJjeVDuC6iNrvS+rOystu5SQmCI8vS78bqw67QvsOo2h1KLclfSUMT5KNeF9BXrus7ZsqfP019fvDSAfCCreSmMNaNZ6oGESgfwYsKiGV4yqXijsq8nbtInPdQ4JqnT/LmaRGWshq6A36b/Alr7c="
+    on_failure: change
+    secure: "nmGD0mPrAR/VoyasHEFnZPerkrfsX8oIuSCxiqaeeAMx/Z/wx7v40mndzM1xO1t9eEKzgEcQhLJcmvZ+sxEpGE8cJjUUo0sSzuiG85Q6Z5li42TLEtr3AQfvtguAVmPhn7FhribQrV0t4CTcq9T+h0b+SW4Fa6EoaPv8a7ZhfpVKj6ODm7XF6LDVUtiVw4UCEYcbMwPCj9a3IC2U/bdegekD71GPy0o6raCPF/yF7bPZyKiGK3qntNy8YTKIZzxhimXKb8K7ATy7IAqJzkyKB5mE1IWb4ZbhAOiQQT9/jkrLNI54rWW2wc6144o4y1tuvfkzq3rT4wXsGIfWQ0jnMe6XnMcUjb178GXMG5RjIe+kQI1u8zdWD/IqNDA99GzLPkL1mOZE/qWPFpBOBkcn70B/aYa5Rfw0qoz7z5TEE6JinEKSF0jNko8gMgbbScvQd3XA6/urAOyhFqr9RyTxiJlo7Jnl84/bmXxAQfUbAQo2QsbsOoRqqIUhE4IbcXCM0L5glBXc7XIymWkO1efwVOlk72+U9rmn/iZgCxbefvS1reGK9ITD8jG7nCxfewFI2kW5W0NiSG1KRgzr44eQYzL39p/tM1l1K8xn7FzpjBRmp2aLRXjCerdH4mLNk0ILsx5X81NG1Ocp6GbYxv6txIvqlmrfiO93Dd2VmFNW3Dw="
