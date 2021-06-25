@@ -14,6 +14,7 @@ requirements = [
     "numpy>=1.16.5, !=1.21.0",
     "pandas>=1.2.0",
     "xarray>=0.17.0", # a bug introduced in 0.16.2 causes align to handle MultiIndex wrong
+    "netcdf4",
     # test_requirements
     "pytest",
     "imageio",
