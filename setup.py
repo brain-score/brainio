@@ -7,11 +7,16 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
+    "six",
+    "boto3",
+    "tqdm",
+    "Pillow",
     "numpy>=1.16.5",
     "pandas>=1.2.0",
-    "xarray==0.16.1", # a bug introduced in 0.16.2 causes align to handle MultiIndex wrong
+    "xarray>=0.17.0", # a bug introduced in 0.16.2 causes align to handle MultiIndex wrong
     # test_requirements
     "pytest",
+    "imageio",
     "entrypoints",
 ]
 
@@ -34,7 +39,6 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
