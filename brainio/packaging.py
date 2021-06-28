@@ -174,7 +174,7 @@ def write_netcdf(assembly, target_netcdf_file):
 
 
 def verify_assembly(assembly, assembly_class):
-    if assembly_class is not "PropertyAssembly":
+    if assembly_class not in ("PropertyAssembly", "SpikeTimesAssembly"):
         assert 'presentation' in assembly.dims
         if assembly_class.startswith('Neur'):  # neural/neuron assemblies need to follow this format
             assert set(assembly.dims) == {'presentation', 'neuroid'} or \
