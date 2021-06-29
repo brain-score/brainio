@@ -17,7 +17,7 @@ def get_lookups():
     lookups = entrypoints.get_group_named(ENTRYPOINT)
     dfs = []
     for k, v in lookups.items():
-        df = v.load()
+        df = v.load()()
         df["lookup_source"] = k
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
