@@ -11,14 +11,11 @@ requirements = [
     "boto3",
     "tqdm",
     "Pillow",
+    "entrypoints",
     "numpy>=1.16.5, !=1.21.0",
     "pandas>=1.2.0",
     "xarray>=0.17.0", # a bug introduced in 0.16.2 causes align to handle MultiIndex wrong
     "netcdf4",
-    # test_requirements
-    "pytest",
-    "imageio",
-    "entrypoints",
 ]
 
 setup(
@@ -32,6 +29,12 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     install_requires=requirements,
+    extras_require={
+        "tests": [
+            "pytest",
+            "imageio",
+        ],
+    },
     license="MIT license",
     zip_safe=False,
     keywords='BrainIO',
@@ -45,7 +48,7 @@ setup(
     test_suite='tests',
     entry_points={
         'brainio_lookups': [
-            'brainio_test = brainio.entrypoint:brainio_test',
+            'brainio_test = brainio.entrypoint:brainio_test [tests]',
         ],
     },
 )
