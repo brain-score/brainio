@@ -45,7 +45,7 @@ setup(
     test_suite='tests',
     entry_points={
         'brainio_lookups': [
-            'brainio_test = brainio.entrypoint:brainio_test',
+            'brainio_test = brainio.entrypoint:brainio_test [tests]',
         ],
     },
 )
