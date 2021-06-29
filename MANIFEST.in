@@ -1,7 +1,7 @@
 include LICENSE
 include README.md
+include brainio/lookup.csv
 
-recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
