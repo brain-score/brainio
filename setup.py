@@ -26,7 +26,7 @@ setup(
     author="Jon Prescott-Roy, Martin Schrimpf",
     author_email='jjpr@mit.edu, mschrimpf@mit.edu',
     url='https://github.com/brain-score/brainio',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'brainio-test']),
     include_package_data=True,
     install_requires=requirements,
     extras_require={
@@ -46,9 +46,4 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
-    entry_points={
-        'brainio_lookups': [
-            'brainio_test = brainio.entrypoint:brainio_test [tests]',
-        ],
-    },
 )
