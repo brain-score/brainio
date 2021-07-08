@@ -17,7 +17,7 @@ before_install:
 - pip install --upgrade pip
 install:
 - pip install .[tests]
-- pip install brainio-test
+- pip install brainio-test/
 - pip list # list installed package versions
 script:
 - if [ "$PRIVATE_ACCESS" = 1 ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then pytest -m "not memory_intense and not slow"; fi
