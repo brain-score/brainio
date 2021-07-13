@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
-
+_data = None
 
 def get_lookups():
     lookups = entrypoints.get_group_named(ENTRYPOINT)
@@ -23,23 +23,27 @@ def get_lookups():
     return pd.concat(dfs, ignore_index=True)
 
 
-_logger.debug(f"Loading lookup from entrypoints")
-print(f"Loading lookup from entrypoints")  # print because logging usually isn't set up at this point during import
-data = get_lookups()
+def data():
+    global _data
+    if _data is None:
+        _logger.debug(f"Loading lookup from entrypoints")
+        print(f"Loading lookup from entrypoints")
+        _data = get_lookups()
+    return _data
 
 
 def list_stimulus_sets():
-    stimuli_rows = data[data['lookup_type'] == TYPE_STIMULUS_SET]
+    stimuli_rows = data()[data()['lookup_type'] == TYPE_STIMULUS_SET]
     return stimuli_rows['identifier'].values
 
 
 def list_assemblies():
-    assembly_rows = data[data['lookup_type'] == TYPE_ASSEMBLY]
+    assembly_rows = data()[data()['lookup_type'] == TYPE_ASSEMBLY]
     return assembly_rows['identifier'].values
 
 
 def lookup_stimulus_set(identifier):
-    lookup = data[(data['identifier'] == identifier) & (data['lookup_type'] == TYPE_STIMULUS_SET)]
+    lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_STIMULUS_SET)]
     if len(lookup) == 0:
         raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
     if len(lookup) > 2:
@@ -53,7 +57,7 @@ def lookup_stimulus_set(identifier):
 
 
 def lookup_assembly(identifier):
-    lookup = data[(data['identifier'] == identifier) & (data['lookup_type'] == TYPE_ASSEMBLY)]
+    lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_ASSEMBLY)]
     if len(lookup) == 0:
         raise AssemblyLookupError(f"assembly {identifier} not found")
     if len(lookup) > 1:
@@ -72,15 +76,15 @@ class AssemblyLookupError(KeyError):
 
 def append(object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
-    global data
+    global _data
     _logger.debug(f"Adding {lookup_type} {object_identifier} to lookup")
     object_lookup = {'identifier': object_identifier, 'lookup_type': lookup_type, 'class': cls,
                      'location_type': "S3", 'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
                      'sha1': sha1, 'stimulus_set_identifier': stimulus_set_identifier, }
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
-    duplicates = data[(data['identifier'] == object_lookup['identifier']) &
-                      (data['lookup_type'] == object_lookup['lookup_type'])]
+    duplicates = _data[(_data['identifier'] == object_lookup['identifier']) &
+                      (_data['lookup_type'] == object_lookup['lookup_type'])]
     if len(duplicates) > 0:
         if object_lookup['lookup_type'] == TYPE_ASSEMBLY:
             raise ValueError(f"Trying to add duplicate identifier {object_lookup['identifier']}, "
@@ -95,8 +99,8 @@ def append(object_identifier, cls, lookup_type,
                     f"Trying to add duplicate identifier {object_lookup['identifier']}, existing {duplicates}")
     # append and save
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
-    data = data.append(add_lookup)
-    data.to_csv(path, index=False)
+    _data = _data.append(add_lookup)
+    _data.to_csv(path, index=False)
 
 
 def _is_csv_lookup(data_row):
