@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/brain-score/brainio.svg?token=vqt7d2yhhpLGwHsiTZvT&branch=master)](https://travis-ci.com/brain-score/brainio)
+[![Build Status](https://travis-ci.com/brain-score/brainio.svg?branch=main)](https://travis-ci.com/brain-score/brainio)
 
 # BrainIO 
 
