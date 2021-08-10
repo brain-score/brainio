@@ -14,7 +14,7 @@ requirements = [
     "entrypoints",
     "numpy>=1.16.5, !=1.21.*",
     "pandas>=1.2.0, !=1.3.0",
-    "xarray>=0.17.0, !=0.18.*",
+    "xarray==0.17.0",
     "netcdf4",
 ]
 
