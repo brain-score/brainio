@@ -119,7 +119,7 @@ def check_experiment_stimulus_set(stimulus_set):
     check_image_numbers(stimulus_set)
 
 
-def package_stimulus_set(proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-contrib"):
+def package_stimulus_set(proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-brainscore"):
     """
     Package a set of images along with their metadata for the BrainIO system.
     :param proto_stimulus_set: A StimulusSet containing one row for each image,
@@ -127,8 +127,9 @@ def package_stimulus_set(proto_stimulus_set, stimulus_set_identifier, bucket_nam
         and columns for all stimulus-set-specific metadata but not the column 'filename'.
     :param stimulus_set_identifier: A unique name identifying the stimulus set
         <lab identifier>.<first author e.g. 'Rajalingham' or 'MajajHong' for shared first-author><YYYY year of publication>.
-    :param bucket_name: 'brainio.dicarlo' for DiCarlo Lab stimulus sets, 'brainio.contrib' for external stimulus sets,
-        'brainio.requested' for to-be-run-on-monkey-machine stimulus sets.
+    :param bucket_name: 'brainio-brainscore' for Brain-Score stimulus sets,
+        'brainio-dicarlo' for DiCarlo Lab stimulus sets,
+        'brainio.requested' for to-be-run-on-monkey-machine DiCarlo stimulus sets.
     """
     _logger.debug(f"Packaging {stimulus_set_identifier}")
 
@@ -182,7 +183,7 @@ def verify_assembly(assembly, assembly_class):
 
 
 def package_data_assembly(proto_data_assembly, assembly_identifier, stimulus_set_identifier,
-                          assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib"):
+                          assembly_class="NeuronRecordingAssembly", bucket_name="brainio-brainscore"):
     """
     Package a set of data along with its metadata for the BrainIO system.
     :param proto_data_assembly: An xarray DataArray containing experimental measurements and all related metadata.
@@ -200,7 +201,7 @@ def package_data_assembly(proto_data_assembly, assembly_identifier, stimulus_set
         * For requests: <lab identifier>.<b for behavioral|n for neuroidal>.<m for monkey|h for human>.<proposer e.g. 'Margalit'>.<pull request number>
     :param stimulus_set_identifier: The unique name of an existing StimulusSet in the BrainIO system.
     :param assembly_class: The name of a DataAssembly subclass.
-    :param bucket_name: 'brainio-dicarlo' for DiCarlo Lab assemblies, 'brainio-contrib' for external assemblies.
+    :param bucket_name: 'brainio-brainscore' for Brain-Score assemblies, 'brainio-dicarlo' for DiCarlo Lab assemblies
     """
     _logger.debug(f"Packaging {assembly_identifier}")
 
