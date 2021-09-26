@@ -4,7 +4,10 @@ from pandas import DataFrame
 
 from brainio.assemblies import DataAssembly, get_levels
 from brainio.stimuli import StimulusSet
-from brainio.packaging import write_netcdf, check_image_numbers, check_image_naming_convention
+from brainio.packaging import write_netcdf, check_image_numbers, check_image_naming_convention, TYPE_ASSEMBLY, TYPE_STIMULUS_SET
+import brainio.lookup as lookup
+
+TEST_CATALOG_NAME = "brainio_test"
 
 
 def test_write_netcdf():
@@ -67,4 +70,21 @@ def test_image_numbers():
 def test_image_naming_convention():
     for name in ['image_1.png', 'Nat300_100.png', '1.png']:
         check_image_naming_convention(name)
+
+
+def test_list_catalogs():
+    catalog_names = lookup.list_catalogs()
+    assert TEST_CATALOG_NAME in catalog_names
+
+
+def test_append():
+    lookup.append(TEST_CATALOG_NAME, "test_append_assembly", DataAssembly, TYPE_ASSEMBLY, "brainio-test", )
+
+
+def test_package_stimulus_set():
+    pass
+
+
+def test_package_data_assembly():
+    pass
 
