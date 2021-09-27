@@ -1,10 +1,12 @@
 from pathlib import Path
 
+import brainio
 from pandas import DataFrame
 
 from brainio.assemblies import DataAssembly, get_levels
 from brainio.stimuli import StimulusSet
-from brainio.packaging import write_netcdf, check_image_numbers, check_image_naming_convention, TYPE_ASSEMBLY, TYPE_STIMULUS_SET
+from brainio.packaging import write_netcdf, check_image_numbers, check_image_naming_convention, TYPE_ASSEMBLY, \
+    TYPE_STIMULUS_SET, package_stimulus_set, package_data_assembly
 import brainio.lookup as lookup
 
 TEST_CATALOG_NAME = "brainio_test"
@@ -96,7 +98,13 @@ def test_append():
 
 
 def test_package_stimulus_set():
-    assert False
+    stimulus_set = StimulusSet([{'image_id': str(i)} for i in range(10)])
+    stimulus_set.image_paths = {str(i): f'images/{i}.png' for i in range(10)}
+    identifier = "test.ten_images"
+    package_stimulus_set(TEST_CATALOG_NAME, stimulus_set, identifier, bucket_name="brainio-temp")
+    assert identifier in lookup.list_stimulus_sets()
+    gotten = brainio.get_stimulus_set(identifier)
+    assert gotten is not None
 
 
 def test_package_data_assembly():
