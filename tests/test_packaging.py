@@ -78,13 +78,27 @@ def test_list_catalogs():
 
 
 def test_append():
-    lookup.append(TEST_CATALOG_NAME, "test_append_assembly", DataAssembly, TYPE_ASSEMBLY, "brainio-test", )
+    assy = DataAssembly(
+        data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
+        coords={
+            'up': ("a", ['alpha', 'alpha', 'beta', 'beta', 'beta', 'beta']),
+            'down': ("a", [1, 1, 1, 1, 2, 2]),
+            'sideways': ('b', ['x', 'y', 'z'])
+        },
+        dims=['a', 'b']
+    )
+    identifier = "test.append"
+    target_netcdf_file = Path("assy_test_append.nc")
+    netcdf_sha1 = write_netcdf(assy, str(target_netcdf_file))
+    lookup.append(TEST_CATALOG_NAME, identifier, "DataAssembly", TYPE_ASSEMBLY, "brainio-temp", netcdf_sha1, "assy_test_append.nc", "dicarlo.hvm")
+    assert identifier in list(lookup.get_catalogs()[TEST_CATALOG_NAME]["identifier"])
+    assert identifier in lookup.list_assemblies()
 
 
 def test_package_stimulus_set():
-    pass
+    assert False
 
 
 def test_package_data_assembly():
-    pass
+    assert False
 

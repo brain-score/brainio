@@ -20,12 +20,17 @@ def list_catalogs():
     return list(entrypoints.get_group_named(ENTRYPOINT).keys())
 
 
+def load_lookup(name, entry_point):
+    df = entry_point.load()()
+    df["lookup_source"] = name
+    return df
+
+
 def get_lookups():
     lookups = entrypoints.get_group_named(ENTRYPOINT)
     dfs = {}
     for k, v in lookups.items():
-        df = v.load()()
-        df["lookup_source"] = k
+        df = load_lookup(k, v)
         dfs[k] = df
     return dfs
 
@@ -91,14 +96,21 @@ class AssemblyLookupError(KeyError):
 
 def append(catalog_name, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
-    # global _catalogs
+    global _catalogs
     catalogs = get_catalogs()
     catalog = catalogs[catalog_name]
     catalog_path = Path(catalog.attrs[CATALOG_PATH_KEY])
     _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_name}")
-    object_lookup = {'identifier': object_identifier, 'lookup_type': lookup_type, 'class': cls,
-                     'location_type': "S3", 'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
-                     'sha1': sha1, 'stimulus_set_identifier': stimulus_set_identifier, }
+    object_lookup = {
+        'identifier': object_identifier,
+        'lookup_type': lookup_type,
+        'class': cls,
+        'location_type': "S3",
+        'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
+        'sha1': sha1,
+        'stimulus_set_identifier': stimulus_set_identifier,
+        'lookup_source': catalog_name,
+    }
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
     duplicates = catalog[(catalog['identifier'] == object_lookup['identifier']) &
@@ -119,7 +131,7 @@ def append(catalog_name, object_identifier, cls, lookup_type,
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
     catalog = catalog.append(add_lookup)
     catalog.to_csv(catalog_path, index=False)
-    catalogs[catalog_name] = catalog
+    _catalogs[catalog_name] = catalog
 
 
 def _is_csv_lookup(data_row):
