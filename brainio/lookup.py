@@ -54,12 +54,12 @@ def data():
 
 def list_stimulus_sets():
     stimuli_rows = data()[data()['lookup_type'] == TYPE_STIMULUS_SET]
-    return stimuli_rows['identifier'].values
+    return list(set(stimuli_rows['identifier']))
 
 
 def list_assemblies():
     assembly_rows = data()[data()['lookup_type'] == TYPE_ASSEMBLY]
-    return assembly_rows['identifier'].values
+    return list(assembly_rows['identifier'])
 
 
 def lookup_stimulus_set(identifier):
@@ -97,6 +97,7 @@ class AssemblyLookupError(KeyError):
 def append(catalog_name, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
     global _catalogs
+    global _concat_catalogs
     catalogs = get_catalogs()
     catalog = catalogs[catalog_name]
     catalog_path = Path(catalog.attrs[CATALOG_PATH_KEY])
@@ -132,6 +133,7 @@ def append(catalog_name, object_identifier, cls, lookup_type,
     catalog = catalog.append(add_lookup)
     catalog.to_csv(catalog_path, index=False)
     _catalogs[catalog_name] = catalog
+    _concat_catalogs = None
 
 
 def _is_csv_lookup(data_row):
