@@ -11,35 +11,55 @@ _logger = logging.getLogger(__name__)
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
-_data = None
+CATALOG_PATH_KEY = "catalog_path"
+_catalogs = {}
+_concat_catalogs = None
+
+
+def list_catalogs():
+    return list(entrypoints.get_group_named(ENTRYPOINT).keys())
+
+
+def load_lookup(name, entry_point):
+    df = entry_point.load()()
+    df["lookup_source"] = name
+    return df
+
 
 def get_lookups():
     lookups = entrypoints.get_group_named(ENTRYPOINT)
-    dfs = []
+    dfs = {}
     for k, v in lookups.items():
-        df = v.load()()
-        df["lookup_source"] = k
-        dfs.append(df)
-    return pd.concat(dfs, ignore_index=True)
+        df = load_lookup(k, v)
+        dfs[k] = df
+    return dfs
+
+
+def get_catalogs():
+    global _catalogs
+    if not _catalogs:
+        _logger.debug(f"Loading lookup from entrypoints")
+        print(f"Loading lookup from entrypoints")
+        _catalogs = get_lookups()
+    return _catalogs
 
 
 def data():
-    global _data
-    if _data is None:
-        _logger.debug(f"Loading lookup from entrypoints")
-        print(f"Loading lookup from entrypoints")
-        _data = get_lookups()
-    return _data
+    global _concat_catalogs
+    if _concat_catalogs is None:
+        catalogs = get_catalogs()
+        _concat_catalogs = pd.concat(catalogs.values(), ignore_index=True)
+    return _concat_catalogs
 
 
 def list_stimulus_sets():
     stimuli_rows = data()[data()['lookup_type'] == TYPE_STIMULUS_SET]
-    return stimuli_rows['identifier'].values
+    return list(set(stimuli_rows['identifier']))
 
 
 def list_assemblies():
     assembly_rows = data()[data()['lookup_type'] == TYPE_ASSEMBLY]
-    return assembly_rows['identifier'].values
+    return list(assembly_rows['identifier'])
 
 
 def lookup_stimulus_set(identifier):
@@ -74,17 +94,28 @@ class AssemblyLookupError(KeyError):
     pass
 
 
-def append(object_identifier, cls, lookup_type,
+def append(catalog_name, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
-    global _data
-    _logger.debug(f"Adding {lookup_type} {object_identifier} to lookup")
-    object_lookup = {'identifier': object_identifier, 'lookup_type': lookup_type, 'class': cls,
-                     'location_type': "S3", 'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
-                     'sha1': sha1, 'stimulus_set_identifier': stimulus_set_identifier, }
+    global _catalogs
+    global _concat_catalogs
+    catalogs = get_catalogs()
+    catalog = catalogs[catalog_name]
+    catalog_path = Path(catalog.attrs[CATALOG_PATH_KEY])
+    _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_name}")
+    object_lookup = {
+        'identifier': object_identifier,
+        'lookup_type': lookup_type,
+        'class': cls,
+        'location_type': "S3",
+        'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
+        'sha1': sha1,
+        'stimulus_set_identifier': stimulus_set_identifier,
+        'lookup_source': catalog_name,
+    }
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
-    duplicates = _data[(_data['identifier'] == object_lookup['identifier']) &
-                      (_data['lookup_type'] == object_lookup['lookup_type'])]
+    duplicates = catalog[(catalog['identifier'] == object_lookup['identifier']) &
+                           (catalog['lookup_type'] == object_lookup['lookup_type'])]
     if len(duplicates) > 0:
         if object_lookup['lookup_type'] == TYPE_ASSEMBLY:
             raise ValueError(f"Trying to add duplicate identifier {object_lookup['identifier']}, "
@@ -99,8 +130,10 @@ def append(object_identifier, cls, lookup_type,
                     f"Trying to add duplicate identifier {object_lookup['identifier']}, existing {duplicates}")
     # append and save
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
-    _data = _data.append(add_lookup)
-    _data.to_csv(path, index=False)
+    catalog = catalog.append(add_lookup)
+    catalog.to_csv(catalog_path, index=False)
+    _catalogs[catalog_name] = catalog
+    _concat_catalogs = None
 
 
 def _is_csv_lookup(data_row):
