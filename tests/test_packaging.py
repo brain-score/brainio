@@ -101,7 +101,7 @@ def test_append():
 
 def test_package_stimulus_set():
     stimulus_set = StimulusSet([{'image_id': "n"+str(i), 'thing': 'foo'} for i in range(10)])
-    stimulus_set.image_paths = {"n"+str(i): f'images/n{i}.png' for i in range(10)}
+    stimulus_set.image_paths = {"n"+str(i): Path(__file__).parent / f'images/n{i}.png' for i in range(10)}
     identifier = STIMULUS_SET_IDENTIFIER
     package_stimulus_set(TEST_CATALOG_NAME, stimulus_set, identifier, bucket_name="brainio-temp")
     assert identifier in lookup.list_stimulus_sets()
