@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 import brainio
 from pandas import DataFrame
 
@@ -99,6 +101,7 @@ def test_append():
     assert identifier in lookup.list_assemblies()
 
 
+@pytest.mark.private_access
 def test_package_stimulus_set():
     stimulus_set = StimulusSet([{'image_id': "n"+str(i), 'thing': 'foo'} for i in range(10)])
     stimulus_set.image_paths = {"n"+str(i): Path(__file__).parent / f'images/n{i}.png' for i in range(10)}
@@ -109,6 +112,7 @@ def test_package_stimulus_set():
     assert gotten is not None
 
 
+@pytest.mark.private_access
 def test_package_data_assembly():
     if STIMULUS_SET_IDENTIFIER not in brainio.list_stimulus_sets():
         test_package_stimulus_set()
