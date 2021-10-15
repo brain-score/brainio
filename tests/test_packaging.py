@@ -9,6 +9,8 @@ from brainio.packaging import write_netcdf, check_image_numbers, check_image_nam
     TYPE_STIMULUS_SET, package_stimulus_set, package_data_assembly
 import brainio.lookup as lookup
 
+STIMULUS_SET_IDENTIFIER = "test.ten_images"
+
 TEST_CATALOG_NAME = "brainio_test"
 
 
@@ -98,30 +100,32 @@ def test_append():
 
 
 def test_package_stimulus_set():
-    stimulus_set = StimulusSet([{'image_id': str(i), 'thing': 'foo'} for i in range(10)])
-    stimulus_set.image_paths = {str(i): f'images/{i}.png' for i in range(10)}
-    identifier = "test.ten_images"
+    stimulus_set = StimulusSet([{'image_id': "n"+str(i), 'thing': 'foo'} for i in range(10)])
+    stimulus_set.image_paths = {"n"+str(i): f'images/n{i}.png' for i in range(10)}
+    identifier = STIMULUS_SET_IDENTIFIER
     package_stimulus_set(TEST_CATALOG_NAME, stimulus_set, identifier, bucket_name="brainio-temp")
     assert identifier in lookup.list_stimulus_sets()
     gotten = brainio.get_stimulus_set(identifier)
     assert gotten is not None
-    return identifier
 
 
 def test_package_data_assembly():
-    stimulus_set_identifier = test_package_stimulus_set()
+    if STIMULUS_SET_IDENTIFIER not in brainio.list_stimulus_sets():
+        test_package_stimulus_set()
     assy = DataAssembly(
         data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
         coords={
-            'image_id': ("presentation", [str(i) for i in range(6)]),
+            'image_id': ("presentation", ["n"+str(i) for i in range(6)]),
+            'image_type': ("presentation", ["foo"]*6),
             'neuroid_id': ("neuroid", list("ABC")),
+            'neuroid_type': ("neuroid", ["bar"]*3),
             'time_bin_start': ('time_bin', [0]),
             'time_bin_end': ('time_bin', [10]),
         },
         dims=['presentation', 'neuroid', 'time_bin']
     )
     identifier = "test.package_assembly"
-    package_data_assembly(TEST_CATALOG_NAME, assy, identifier, stimulus_set_identifier, "DataAssembly", "brainio-temp")
+    package_data_assembly(TEST_CATALOG_NAME, assy, identifier, STIMULUS_SET_IDENTIFIER, "DataAssembly", "brainio-temp")
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
