@@ -1,0 +1,40 @@
+package:
+  name: "brainio"
+  version: "0.2"
+
+source:
+  git_rev: "main"
+  git_url: "https://github.com/brain-score/brainio.git"
+
+build:
+  preserve_egg_dir: True
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - six
+    - boto3
+    - tqdm
+    - Pillow
+    - entrypoints
+    - xarray ==0.17.0
+    - netcdf4
+
+  run:
+    - python
+    - six
+    - boto3
+    - tqdm
+    - Pillow
+    - entrypoints
+    - xarray
+    - netcdf4
+
+test:
+  imports:
+    - brainio
+
+about:
+  home: "https://github.com/brain-score/brainio"
+  
