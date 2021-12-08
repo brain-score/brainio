@@ -67,28 +67,39 @@ def lookup_stimulus_set(identifier):
     lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_STIMULUS_SET)]
     if len(lookup) == 0:
         raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
-    if len(lookup) > 2:
-        cols = [n for n in lookup.columns() if n != LOOKUP_SOURCE]
-        dupe = lookup.duplicated(subset=cols, keep=False)
-        if dupe.all():
-
-        raise RuntimeError(
-            f"Internal data inconsistency: Found more than 2 lookup rows for stimulus_set identifier {identifier}")
-    csv_lookup = [lookup_row for _, lookup_row in lookup.iterrows() if _is_csv_lookup(lookup_row)]
-    zip_lookup = [lookup_row for _, lookup_row in lookup.iterrows() if _is_zip_lookup(lookup_row)]
-    assert len(csv_lookup) == 1 and len(zip_lookup) == 1
-    csv_lookup, zip_lookup = csv_lookup[0], zip_lookup[0]
+    csv_lookup = _lookup_stimulus_set_filtered(lookup, _is_csv_lookup, "CSV")
+    zip_lookup = _lookup_stimulus_set_filtered(lookup, _is_zip_lookup, "zip")
     return csv_lookup, zip_lookup
+
+
+def _lookup_stimulus_set_filtered(lookup, filter_func, label):
+    cols = [n for n in lookup.columns if n != LOOKUP_SOURCE]
+    # filter for csv vs. zip
+    # if there are any groups of rows where every field except source is the same,
+    # we only want one from each group
+    filtered_rows = lookup[lookup.apply(filter_func, axis=1)].drop_duplicates(subset=cols)
+    identifier = lookup.iloc[0]['identifier']
+    if len(filtered_rows) == 0:
+        raise StimulusSetLookupError(f"{label} for stimulus set {identifier} not found")
+    if len(filtered_rows) > 1: # there were multiple rows but not all identical
+        raise RuntimeError(
+            f"Internal data inconsistency: Found more than 2 lookup rows for stimulus_set {label} for identifier {identifier}")
+    assert len(filtered_rows) == 1
+    return filtered_rows.squeeze()
 
 
 def lookup_assembly(identifier):
     lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_ASSEMBLY)]
     if len(lookup) == 0:
         raise AssemblyLookupError(f"assembly {identifier} not found")
-    if len(lookup) > 1:
+    cols = [n for n in lookup.columns if n != LOOKUP_SOURCE]
+    # if there are any groups of rows where every field except source is the same,
+    # we only want one from each group
+    de_dupe = lookup.drop_duplicates(subset=cols)
+    if len(de_dupe) > 1: # there were multiple rows but not all identical
         raise RuntimeError(f"Internal data inconsistency: Found multiple lookup rows for identifier {identifier}")
-    lookup = lookup.squeeze()
-    return lookup
+    assert len(de_dupe) == 1
+    return de_dupe.squeeze()
 
 
 class StimulusSetLookupError(KeyError):
