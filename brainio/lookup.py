@@ -6,14 +6,15 @@ import entrypoints
 import numpy as np
 import pandas as pd
 
-_logger = logging.getLogger(__name__)
-
+LOOKUP_SOURCE = "lookup_source"
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
 CATALOG_PATH_KEY = "catalog_path"
 _catalogs = {}
 _concat_catalogs = None
+
+_logger = logging.getLogger(__name__)
 
 
 def list_catalogs():
@@ -22,7 +23,7 @@ def list_catalogs():
 
 def load_lookup(name, entry_point):
     df = entry_point.load()()
-    df["lookup_source"] = name
+    df[LOOKUP_SOURCE] = name
     return df
 
 
@@ -67,6 +68,10 @@ def lookup_stimulus_set(identifier):
     if len(lookup) == 0:
         raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
     if len(lookup) > 2:
+        cols = [n for n in lookup.columns() if n != LOOKUP_SOURCE]
+        dupe = lookup.duplicated(subset=cols, keep=False)
+        if dupe.all():
+
         raise RuntimeError(
             f"Internal data inconsistency: Found more than 2 lookup rows for stimulus_set identifier {identifier}")
     csv_lookup = [lookup_row for _, lookup_row in lookup.iterrows() if _is_csv_lookup(lookup_row)]
