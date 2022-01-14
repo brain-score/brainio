@@ -55,12 +55,12 @@ def data():
 
 def list_stimulus_sets():
     stimuli_rows = data()[data()['lookup_type'] == TYPE_STIMULUS_SET]
-    return list(set(stimuli_rows['identifier']))
+    return sorted(list(set(stimuli_rows['identifier'])))
 
 
 def list_assemblies():
     assembly_rows = data()[data()['lookup_type'] == TYPE_ASSEMBLY]
-    return list(assembly_rows['identifier'])
+    return sorted(list(set(assembly_rows['identifier'])))
 
 
 def lookup_stimulus_set(identifier):

@@ -324,44 +324,6 @@ class TestMultiDimApply:
         assert g.equals(d)
 
 
-@pytest.mark.parametrize('assembly', (
-        'dicarlo.MajajHong2015',
-        'dicarlo.MajajHong2015.private',
-        'dicarlo.MajajHong2015.public',
-        'dicarlo.MajajHong2015.temporal',
-        'dicarlo.MajajHong2015.temporal.private',
-        'dicarlo.MajajHong2015.temporal.public',
-        'dicarlo.MajajHong2015.temporal-10ms',
-        'gallant.David2004',
-        'tolias.Cadena2017',
-        'movshon.FreemanZiemba2013',
-        'movshon.FreemanZiemba2013.private',
-        'movshon.FreemanZiemba2013.public',
-        'dicarlo.Rajalingham2018.public', 'dicarlo.Rajalingham2018.private',
-        'dicarlo.Kar2019',
-        'dicarlo.Kar2018hvm',
-        'dicarlo.Kar2018cocogray',
-        'klab.Zhang2018search_obj_array',
-        'aru.Kuzovkin2018',
-        'dicarlo.Rajalingham2020',
-        'dicarlo.SanghaviMurty2020',
-        'dicarlo.SanghaviJozwik2020',
-        'dicarlo.Sanghavi2020',
-        'dicarlo.SanghaviMurty2020THINGS1',
-        'dicarlo.SanghaviMurty2020THINGS2',
-        'aru.Kuzovkin2018',
-        'dicarlo.Seibert2019',
-        'aru.Cichy2019',
-        'dicarlo.Rust2012.single',
-        'dicarlo.Rust2012.array',
-        'dicarlo.BashivanKar2019.naturalistic',
-        'dicarlo.BashivanKar2019.synthetic',
-))
-def test_list_assembly(assembly):
-    l = brainio.list_assemblies()
-    assert assembly in l
-
-
 @pytest.mark.parametrize('assembly_identifier', [
     pytest.param('gallant.David2004', marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.MajajHong2015', marks=[pytest.mark.private_access]),
@@ -426,19 +388,6 @@ def test_getitem():
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     single = assy_hvm[0, 0, 0]
     assert type(single) is type(assy_hvm)
-
-
-def test_lookup():
-    assy = brainio.lookup.lookup_assembly("dicarlo.MajajHong2015.public")
-    assert assy['identifier'] == "dicarlo.MajajHong2015.public"
-    assert assy['location_type'] == "S3"
-    hvm_s3_url = "https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015_public.nc"
-    assert assy['location'] == hvm_s3_url
-
-
-def test_lookup_bad_name():
-    with pytest.raises(brainio.lookup.AssemblyLookupError):
-        brainio.lookup.lookup_assembly("BadName")
 
 
 def test_fetch():
