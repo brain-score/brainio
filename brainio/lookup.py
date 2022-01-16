@@ -67,8 +67,8 @@ def lookup_stimulus_set(identifier):
     lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_STIMULUS_SET)]
     if len(lookup) == 0:
         raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
-    csv_lookup = _lookup_stimulus_set_filtered(lookup, _is_csv_lookup, "CSV")
-    zip_lookup = _lookup_stimulus_set_filtered(lookup, _is_zip_lookup, "zip")
+    csv_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_csv_lookup, label="CSV")
+    zip_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_zip_lookup, label="zip")
     return csv_lookup, zip_lookup
 
 
