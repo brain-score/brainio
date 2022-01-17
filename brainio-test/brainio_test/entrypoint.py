@@ -15,3 +15,12 @@ def brainio_test():
     df.attrs[CATALOG_PATH_KEY] = str(path)
     return df
 
+
+def brainio_test2():
+    path = Path(__file__).parent / "lookup2.csv"
+    _logger.debug(f"Loading lookup from {path}")
+    print(f"Loading lookup from {path}")  # print because logging usually isn't set up at this point during import
+    df = pd.read_csv(path)
+    df.attrs[CATALOG_PATH_KEY] = str(path)
+    return df
+

@@ -1,0 +1,10 @@
+identifier,lookup_type,class,location_type,location,sha1,stimulus_set_identifier
+dicarlo.hvm,stimulus_set,StimulusSet,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm.csv,a56f55205904d5fb5ead4d0dc7bfad5cc4083b94,
+dicarlo.hvm,stimulus_set,,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm.zip,6fd5080deccfb061699909ffcb86a26209516811,
+dicarlo.hvm-public,stimulus_set,StimulusSet,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm-public.csv,5ca7a3da00d8e9c694a9cd725df5ba0ad6d735af,
+dicarlo.hvm-public,stimulus_set,,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm-public.zip,8aa44e038d7b551efa8077467622f9d48d72e473,
+dicarlo.hvm-private,stimulus_set,StimulusSet,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm-private.csv,6ff4981722fa05feb73a2bd26bbbba8b50dc29a6,
+dicarlo.hvm-private,stimulus_set,,S3,https://brainio.dicarlo.s3.amazonaws.com/image_dicarlo_hvm-private.zip,d7b1ca1876dad87e15b0242b4c82c0203ff3cbd3,
+dicarlo.MajajHong2015,assembly,NeuronRecordingAssembly,S3,https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015.nc,bf8f8d01010d727e3db3f85a9bd5f95f9456b7ec,dicarlo.hvm
+dicarlo.MajajHong2015.public,assembly,NeuronRecordingAssembly,S3,https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015_public.nc,13d28ca0ce88ee550b54db3004374ae19096e9b9,dicarlo.hvm-public
+dicarlo.MajajHong2015.private,assembly,NeuronRecordingAssembly,S3,https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015_private.nc,7a40d16148d6f82939155f0bd976d310857fb156,dicarlo.hvm-private
