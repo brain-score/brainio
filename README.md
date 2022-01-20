@@ -1,98 +1,83 @@
 # BrainIO
 [![Build Status](https://travis-ci.com/brain-score/brainio.svg?branch=main)](https://travis-ci.com/brain-score/brainio)
 
-## What is BrainIO?
+# What is BrainIO?
 BrainIO is a framework for standardizing the exchange of data between 
-computational neuroscientists.  It includes a minimal specification for 
-packaged data and tools for working with that packaged data.  
-
-Currently the tools are written in Python, but the 
-[BrainIO Format Specification](docs/SPECIFICATION.md) is language-agnostic.
-
-### Why use BrainIO?
-#### To Safeguard The Value Of Data You Have Collected
-* All data decays in usefulness as it gets farther from the place and time where it was collected
-* Other people will know less than you about what the data means and how to use it
-* **Future you** will know less than **present you** about what the data means and how to use it
-* If you can help that knowledge accompany the data on its travels, you can expand the contexts in which it is useful 
-#### To Adopt A Consistent Format
-* Everyone stores their data differently.  One person uses a single monolithic CSV file, another uses five separate CSV files;  one keeps data in the proprietary binary format the instrument produces, yet another uses a fifteen year old version of MATLAB  
-* In principle data in one style of organization can be transformed to any other style of organization
-* In practice people are rarely willing to spend the time to translate multiple conventions to the same format just so they can use data from multiple sources  
-#### For A Fair Exchange Of Effort
-BrainIO is intended to find a balance between the effort it requires of the consumer of data and the effort it requires of the provider of data, and to minimize both where possible.  
-### Terms and Concepts
-The [BrainIO Format Specification](docs/SPECIFICATION.md) defines three types of entity:  
-* A Stimulus Set
-* A Data Assembly
-* A BrainIO Catalog
-
-A **Stimulus Set** consists of:
-* a CSV file of metadata
-* a zip file of stimuli
-* a few rules for how the metadata are organized (like, include a column called "image_id")
-
-A **Data Assembly** consists of:
-* a netCDF file containing numeric data and metadata
-* a few rules about what's in the netCDF file (names for dimensions, a reference to a stimulus set)
-
-A **BrainIO Catalog** consists of:  
-* a CSV file containing specified lookup data for Stimulus Sets And Data Assemblies
-
-### Further information:  
-
-[The BrainIO Format Specification](docs/SPECIFICATION.md)
+experimental and computational neuroscientists.  It includes a minimal 
+specification for packaged data and tools for working with that packaged data.  
 
 [Glossary](docs/glossary.md)
 
-## Installing BrainIO
+[BrainIO Format Specification](docs/SPECIFICATION.md) 
 
-We recommend installing in a managed Python environment like a `conda` environment.  
+Currently the tools are written in [Python](https://www.python.org/), but the format is language-agnostic.
 
-### Install BrainIO with `pip` in an Existing Interpreter or Environment
+## Why use BrainIO?
+* To safeguard the **value** of the data you have collected by ensuring it never gets separated from its metadata.  
+* To adopt a **consistent format** in order to provide a minimum level of interoperability.  
+* For a fair exchange of effort.  BrainIO is intended to find a **balance** between the effort it requires of the consumer of data and the effort it requires of the provider of data, and to minimize both where possible.  
+## Terms and Concepts
+There are three terms that are important to understanding BrainIO:  
+* **Stimulus Set**
+* **Data Assembly**
+* **BrainIO Catalog**
 
-* Activate your environment.
-* `pip install git+https://github.com/brain-score/brainio.git`
+We define these terms below.  For other terms, see the [glossary](docs/glossary.md).  
 
-### Install a Project That Provides a BrainIO Catalog
+A **Stimulus Set** is a collection of stimuli intended for use in experiments, packaged so that it is organized and easy to obtain.  The parts of a Stimulus Set are:
+* a CSV file of metadata
+* a ZIP file of stimuli
+* a few [rules](docs/SPECIFICATION.md) for how the metadata are organized (like, include a column called "image_id")
 
-If you intend to use a BrainIO catalog to access data or stimuli that have already 
-been packaged, you will need to install the project that provides the catalog that 
-you intend to use.  Here we illustrate with a project called `brainio-dicarlo` 
-provided by the DiCarlo Lab:  
+A **Data Assembly** is a coherent body of data collected during an experiment, packaged with the metadata which describe it.  The term "assembly" is used in engineering for a set of parts that have been assembled to form a coherent unit.  The parts of a Data Assembly are:
+* a [netCDF](https://www.unidata.ucar.edu/software/netcdf/) file containing numeric data and metadata
+* a few [rules](docs/SPECIFICATION.md) about what's in the netCDF file (names for dimensions, a reference to a stimulus set)
 
-* Activate your environment.  
-* `pip install git+https://github.com/dicarlolab/brainio-dicarlo.git`
+A **BrainIO Catalog** is a list of Stimulus Sets and Data Assemblies that provides information on how to obtain them and load them into memory.  The only thing a BrainIO Catalog requires is a CSV file containing [specified](docs/SPECIFICATION.md) lookup data for Stimulus Sets And Data Assemblies.
 
-This registers the catalog with the Python interpreter in your environment 
+# Installing The BrainIO Python Tools
+
+There are two main ways to install BrainIO, corresponding to two of the main ways of using it:  
+* For obtaining and using packaged stimuli and data
+* For creating new packages of stimuli and data and adding them to an existing catalog
+
+These are described below.  We recommend installing in a managed Python environment like a `conda` environment.  
+
+## Install BrainIO As A Consumer of Packages
+
+1. Install BrainIO using `pip` in an existing environment
+    1. Activate your environment.
+    1. `pip install git+https://github.com/brain-score/brainio.git`
+1. Install a project that provides a BrainIO Catalog
+    * If you intend to use a BrainIO catalog to access data or stimuli that have already been packaged, you will need to install the project that provides the catalog that you intend to use.  Here we illustrate with a project called `brainio-dicarlo` provided by the DiCarlo Lab:  
+    1. Activate your environment
+    1. `pip install git+https://github.com/dicarlolab/brainio-dicarlo.git`
+    * This registers the catalog with the Python interpreter in your environment 
 so that the BrainIO tools can use it.  
 
-### Set Up To Add To A Project That Provides a BrainIO Catalog
+## Install BrainIO As A Provider Of Packages
 
-If you intend to package Stimulus Sets And Data Assemblies and add them 
-to a project's catalog, instead of installing the project as above, you will need to clone the repository for that project and 
-install it in your environment in editable mode.  In the example below we set up to 
-add to `brianio-dicarlo`'s BrainIO Catalog:  
+If you intend to package Stimulus Sets And Data Assemblies and add them to a project's catalog, instead of installing the project as above, you will need to clone the repository for that project and install it in your environment in editable mode.  In the example below we set up to add to `brianio-dicarlo`'s BrainIO Catalog:  
 
-* Activate your environment.  
-* Change to the directory where you store your Git repositories:  
+1.  Activate your environment.  
+1.  Change to the directory where you store your [Git](https://git-scm.com/) repositories:  
 `cd ~/projects`
-* `git clone https://github.com/dicarlolab/brainio-dicarlo.git`
-* `pip install -e brainio-dicarlo`
+1.  `git clone https://github.com/dicarlolab/brainio-dicarlo.git`
+1.  `pip install -e brainio-dicarlo`
 
 You should now have a directory `~/projects/brainio-dicarlo` which contains the 
 source for the project.  Packaging and cataloging are covered below.  
 
-## Using Python BrainIO tools
+# Using The BrainIO Python Tools
 
 There are three main ways to use the Python BrainIO tools:
 * To access and analyze stimuli and data that are already packaged and cataloged.
-* To package stimuli and data in an existing catalog. 
-* To create a new catalog.   
+* To add packages of stimuli and data to an existing catalog. 
+* To create a new project that provides a catalog.   
 
-### Using Packaged Stimulus Sets And Data Assemblies
+## Using Packaged Stimulus Sets And Data Assemblies
 
-An example, retrieving a Stimulus Set and a Data Assembly and displaying their text representations:
+Here we provide an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_image`:
 
 ```shell
 (my-project) $ python
@@ -130,45 +115,46 @@ Attributes:
     stimulus_set:                     id                             backgrou...
     identifier:               dicarlo.MajajHong2015.public
 
-
+>>> hvm_stim.get_image("ecd40f3f6d7a4d6d88134d648884e0b9b364efc9")
+"/Users/me/.brainio/image_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
 ```
 
-### Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog
+## Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog
 
 To package Stimulus Sets and Data Assemblies and add them to a BrainIO Catalog, 
 first install a project in editable mode as described above.  Make sure you have 
-commit privileges on GitHub for the repository you're editing.  Then (using the 
+commit privileges on [GitHub](https://github.com/) for the repository you're editing.  Then (using the 
 same example as above):  
 
-* Activate your environment.
-* `cd ~/projects/brainio-dicarlo`
-* Create a new Git branch (the branch name doesn't really matter):  
+1.  Activate your environment.
+1.  `cd ~/projects/brainio-dicarlo`
+1.  Create a new Git branch (the branch name doesn't really matter):  
 `git branch dicarlo.Me2025.public`
-* `git checkout dicarlo.Me2025.public`
-* Write a script that packages your Stimulus Set and/or Data Assembly.  
+1.  `git checkout dicarlo.Me2025.public`
+1.  Write a script that packages your Stimulus Set and/or Data Assembly.  
 We'll call our example `brainio-dicarlo/packaging/scripts/me2025.py`.
-  * Examples can be found in the packaging directory:  `packaging/scripts/`.
-  * The packaging scripts in a repository serve as a historical record.  The 
+    * Examples can be found in the packaging directory:  `packaging/scripts/`.
+    * The packaging scripts in a repository serve as a historical record.  The 
   interface to the BrainIO API may have changed since a given script was written.
   Notably, the `package_stimulus_set` and `package_data_assembly` functions now 
   require a `catalog_name` argument.  In this example we would use 
   `"brainio-dicarlo"`.  
-* `git add packaging/scripts/me2025.py`
-* `git commit -m "Added script for dicarlo.Me2025.public"`
-* `git push`
-* Run your script.  Make sure lines for your packaged files are now present in 
+1.  `git add packaging/scripts/me2025.py`
+1.  `git commit -m "Added script for dicarlo.Me2025.public"`
+1.  `git push`
+1.  Run your script.  Make sure lines for your packaged files are now present in 
 the catalog file at `brainio_dicarlo/lookup.csv`.  
-* `git add brainio_dicarlo/lookup.csv`
-* `git commit -m "Packaged dicarlo.Me2025.public"`
-* `git push`
-* In the GitHub web interface for the project, open a Pull Request for your branch.  
+1.  `git add brainio_dicarlo/lookup.csv`
+1.  `git commit -m "Packaged dicarlo.Me2025.public"`
+1.  `git push`
+1.  In the [GitHub](https://github.com/) web interface for the project, open a Pull Request for your branch.  
 
 Depending on the configuration of the project, once a colleague reviews your 
 changes and approves them, you can merge the pull request to `main`, and your 
 packaged Stimulus Sets and Data Assemblies will be available to anyone who 
 installs the project.  
 
-### Creating A New Project That Provides A Catalog
+## Creating A New Project That Provides A Catalog
 
 ```shell
 mkdir -p ~/projects/my-project/my_project
@@ -218,11 +204,11 @@ pip install -e ~/projects/my-project
 ```
 You should now be able to use packaging scripts (with the argument 
 `catalog_name=my_project`) to add to your catalog.  
-## Getting Help
+# Getting Help
 
-If you have questions, [get in touch with us]("mailto:jjpr@mit.edu,mferg@mit.edu?subject=Brain-Score submission).  
+If you have questions, [get in touch with us]("mailto:jjpr@mit.edu?subject=BrainIO question).
 
-## License
+# License
 
 [MIT License](LICENSE)
 
