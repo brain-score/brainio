@@ -57,7 +57,7 @@ so that the BrainIO tools can use it.
 
 ## Install BrainIO As A Provider Of Packages
 
-If you intend to package Stimulus Sets And Data Assemblies and add them to a project's catalog, instead of installing the project as above, you will need to clone the repository for that project and install it in your environment in editable mode.  In the example below we set up to add to the BrainIO Catalog provided by [a project called `brianio-dicarlo`](https://github.com/dicarlolab/brainio-dicarlo):  
+If you intend to package Stimulus Sets And Data Assemblies and add them to a project's catalog, instead of installing the project as above, you will need to clone the repository for that project and install it in your environment in editable mode.  In the example below we set up to add to the BrainIO Catalog provided by [a project called `brainio-dicarlo`](https://github.com/dicarlolab/brainio-dicarlo):  
 
 1.  Activate your environment.  
 1.  Change to the directory where you store your [Git](https://git-scm.com/) repositories:  
