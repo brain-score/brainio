@@ -119,9 +119,10 @@ def check_experiment_stimulus_set(stimulus_set):
     check_image_numbers(stimulus_set)
 
 
-def package_stimulus_set(proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-contrib"):
+def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-contrib"):
     """
     Package a set of images along with their metadata for the BrainIO system.
+    :param catalog_name: The name of the lookup catalog to add the stimulus set to.
     :param proto_stimulus_set: A StimulusSet containing one row for each image,
         and the columns {'image_id', ['image_path_within_store' (optional to structure zip directory layout)]}
         and columns for all stimulus-set-specific metadata but not the column 'filename'.
@@ -154,14 +155,20 @@ def package_stimulus_set(proto_stimulus_set, stimulus_set_identifier, bucket_nam
     upload_to_s3(str(target_csv_path), bucket_name, target_s3_key=csv_file_name)
     upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
     # link to csv and zip from same identifier. The csv however is the only one of the two rows with a class.
-    lookup.append(object_identifier=stimulus_set_identifier, cls='StimulusSet',
-                  lookup_type=TYPE_STIMULUS_SET,
-                  bucket_name=bucket_name, sha1=csv_sha1, s3_key=csv_file_name,
-                  stimulus_set_identifier=None)
-    lookup.append(object_identifier=stimulus_set_identifier, cls=None,
-                  lookup_type=TYPE_STIMULUS_SET,
-                  bucket_name=bucket_name, sha1=image_zip_sha1, s3_key=zip_file_name,
-                  stimulus_set_identifier=None)
+    lookup.append(
+        catalog_name=catalog_name,
+        object_identifier=stimulus_set_identifier, cls='StimulusSet',
+        lookup_type=TYPE_STIMULUS_SET,
+        bucket_name=bucket_name, sha1=csv_sha1, s3_key=csv_file_name,
+        stimulus_set_identifier=None
+    )
+    lookup.append(
+        catalog_name=catalog_name,
+        object_identifier=stimulus_set_identifier, cls=None,
+        lookup_type=TYPE_STIMULUS_SET,
+        bucket_name=bucket_name, sha1=image_zip_sha1, s3_key=zip_file_name,
+        stimulus_set_identifier=None
+    )
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
 
 
@@ -181,10 +188,11 @@ def verify_assembly(assembly, assembly_class):
                    set(assembly.dims) == {'presentation', 'neuroid', 'time_bin'}
 
 
-def package_data_assembly(proto_data_assembly, assembly_identifier, stimulus_set_identifier,
+def package_data_assembly(catalog_name, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
                           assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib"):
     """
     Package a set of data along with its metadata for the BrainIO system.
+    :param catalog_name: The name of the lookup catalog to add the data assembly to.
     :param proto_data_assembly: An xarray DataArray containing experimental measurements and all related metadata.
         * The dimensions of a neural DataArray must be
             * presentation
@@ -219,8 +227,11 @@ def package_data_assembly(proto_data_assembly, assembly_identifier, stimulus_set
     # execute
     netcdf_kf_sha1 = write_netcdf(proto_data_assembly, target_netcdf_path)
     upload_to_s3(target_netcdf_path, bucket_name, s3_key)
-    lookup.append(object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
-                  lookup_type=TYPE_ASSEMBLY,
-                  bucket_name=bucket_name, sha1=netcdf_kf_sha1,
-                  s3_key=s3_key, cls=assembly_class)
+    lookup.append(
+        catalog_name=catalog_name,
+        object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
+        lookup_type=TYPE_ASSEMBLY,
+        bucket_name=bucket_name, sha1=netcdf_kf_sha1,
+        s3_key=s3_key, cls=assembly_class
+    )
     _logger.debug(f"assembly {assembly_identifier} packaged")

@@ -12,6 +12,7 @@ setup(
     entry_points={
         'brainio_lookups': [
             'brainio_test = brainio_test.entrypoint:brainio_test',
+            'brainio_test2 = brainio_test.entrypoint:brainio_test2',
         ],
     },
 )
