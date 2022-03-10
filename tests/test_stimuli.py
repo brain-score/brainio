@@ -10,6 +10,9 @@ import brainio
 from brainio.stimuli import StimulusSet
 
 
+stimulus_set_identifier = "test.TenImages"
+
+
 class TestPreservation:
     def test_subselection(self):
         stimulus_set = StimulusSet([{'image_id': i} for i in range(100)])
@@ -104,7 +107,7 @@ def test_from_files():
     p = get_csv_path()
     d = get_dir_path()
     s = brainio.stimuli.StimulusSet.from_files(p, d)
-    assert s
+    assert "image_id" in s.columns
     return s
 
 

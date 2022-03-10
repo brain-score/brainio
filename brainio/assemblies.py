@@ -2,6 +2,7 @@ from collections import OrderedDict, defaultdict
 
 import itertools
 import numpy as np
+import pandas as pd
 import xarray as xr
 from xarray import DataArray, IndexVariable
 
@@ -41,6 +42,16 @@ class DataAssembly(DataArray):
             temp = DataArray(*args, **kwargs)
             temp = gather_indexes(temp)
             super(DataAssembly, self).__init__(temp)
+
+    @classmethod
+    def from_files(cls, file_path, stimulus_set_identifier, stimulus_set):
+        loader = AssemblyLoader(
+            local_path=file_path,
+            stimulus_set_identifier=stimulus_set_identifier,
+            stimulus_set=stimulus_set,
+            cls=cls,
+        )
+        return loader.load()
 
     def multi_groupby(self, group_coord_names, *args, **kwargs):
         if len(group_coord_names) < 2:
@@ -327,3 +338,35 @@ def get_levels(assembly):
             for level in value.level_names:
                 levels.append(level)
     return levels
+
+
+class AssemblyLoader:
+    """
+    Loads an assembly from a file.
+    """
+
+    def __init__(self, local_path, stimulus_set_identifier, stimulus_set, cls):
+        self.local_path = local_path
+        self.stimulus_set_identifier = stimulus_set_identifier
+        self.stimulus_set = stimulus_set
+        self.assembly_class = cls
+
+    def load(self):
+        data_array = xr.open_dataarray(self.local_path)
+        if self.assembly_class.__name__ == 'PropertyAssembly':
+            result = data_array
+        else:
+            result = self.merge_stimulus_set_meta(data_array, self.stimulus_set)
+        result = self.assembly_class(data=result)
+        result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
+        result.attrs["stimulus_set"] = self.stimulus_set
+        return result
+
+    def merge_stimulus_set_meta(self, assy, stimulus_set):
+        axis_name, index_column = "presentation", "image_id"
+        df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
+        cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
+        merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
+        for col in stimulus_set.columns:
+            assy[col] = (axis_name, merged[col])
+        return assy

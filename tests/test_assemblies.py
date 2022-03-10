@@ -15,7 +15,7 @@ from brainio import assemblies
 from brainio import fetch
 from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath
 
-from .test_stimuli import test_from_files as get_stimulus_set
+from .test_stimuli import test_from_files as get_stimulus_set, stimulus_set_identifier
 
 
 def test_get_levels():
@@ -466,7 +466,7 @@ class TestFromFiles:
     def test_from_files(self):
         p = get_nc_path()
         s = get_stimulus_set()
-        a = brainio.assemblies.DataAssembly.from_files(p, s)
-        assert a
+        a = brainio.assemblies.DataAssembly.from_files(p, stimulus_set_identifier, s)
+        assert a.shape == (6, 3)
 
 

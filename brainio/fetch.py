@@ -5,16 +5,15 @@ import os
 import zipfile
 
 import boto3
-import pandas as pd
-import xarray as xr
 from botocore import UNSIGNED
 from botocore.config import Config
 from six.moves.urllib.parse import urlparse
 from tqdm import tqdm
 
-from brainio import assemblies as assemblies_base
-from brainio.assemblies import coords_for_dim
-from brainio.stimuli import StimulusSet
+import brainio.assemblies as assemblies
+from brainio.assemblies import AssemblyLoader
+import brainio.stimuli as stimuli
+from brainio.stimuli import StimulusSetLoader
 from brainio.lookup import lookup_assembly, lookup_stimulus_set, sha1_hash
 
 _local_data_path = os.path.expanduser(os.getenv('BRAINIO_HOME', '~/.brainio'))
@@ -99,54 +98,6 @@ def verify_sha1(filepath, sha1):
     _logger.debug(f"sha1 OK: {filepath}")
 
 
-class AssemblyLoader:
-    """
-    Loads an assembly from a file.
-    """
-
-    def __init__(self, local_path, stimulus_set_identifier, cls):
-        self.local_path = local_path
-        self.stimulus_set_identifier = stimulus_set_identifier
-        self.assembly_class = cls
-
-    def load(self):
-        data_array = xr.open_dataarray(self.local_path)
-        stimulus_set = get_stimulus_set(self.stimulus_set_identifier)
-        class_object = getattr(assemblies_base, self.assembly_class)
-        if self.assembly_class == 'PropertyAssembly':
-            result = data_array
-        else:
-            result = self.merge_stimulus_set_meta(data_array, stimulus_set)
-        result = class_object(data=result)
-        result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
-        result.attrs["stimulus_set"] = stimulus_set
-        return result
-
-    def merge_stimulus_set_meta(self, assy, stimulus_set):
-        axis_name, index_column = "presentation", "image_id"
-        df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
-        cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
-        merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
-        for col in stimulus_set.columns:
-            assy[col] = (axis_name, merged[col])
-        return assy
-
-
-class StimulusSetLoader:
-    def __init__(self, csv_path, stimuli_directory, cls):
-        self.csv_path = csv_path
-        self.stimuli_directory = stimuli_directory
-        self.cls = cls
-
-    def load(self):
-        stimulus_set = pd.read_csv(self.csv_path)
-        stimulus_set = StimulusSet(stimulus_set)
-        stimulus_set.image_paths = {row['image_id']: os.path.join(self.stimuli_directory, row['filename'])
-                                    for _, row in stimulus_set.iterrows()}
-        assert all(os.path.isfile(image_path) for image_path in stimulus_set.image_paths.values())
-        return stimulus_set
-
-
 _fetcher_types = {
     "S3": BotoFetcher,
 }
@@ -181,12 +132,27 @@ def unzip(zip_path):
     return containing_dir
 
 
+def resolve_assembly_class(class_name):
+    cls = getattr(assemblies, class_name)
+    return cls
+
+
+def resolve_stimulus_set_class(class_name):
+    cls = getattr(stimuli, class_name)
+    return cls
+
+
 def get_assembly(identifier):
     assembly_lookup = lookup_assembly(identifier)
     local_path = fetch_file(location_type=assembly_lookup['location_type'],
                             location=assembly_lookup['location'], sha1=assembly_lookup['sha1'])
-    loader = AssemblyLoader(local_path, cls=assembly_lookup['class'],
-                            stimulus_set_identifier=assembly_lookup['stimulus_set_identifier'])
+    stimulus_set = get_stimulus_set(assembly_lookup['stimulus_set_identifier'])
+    loader = AssemblyLoader(
+        local_path,
+        stimulus_set_identifier=assembly_lookup['stimulus_set_identifier'],
+        stimulus_set=stimulus_set,
+        cls=resolve_assembly_class(assembly_lookup['class']),
+    )
     assembly = loader.load()
     assembly.attrs['identifier'] = identifier
     return assembly
@@ -199,7 +165,11 @@ def get_stimulus_set(identifier):
     zip_path = fetch_file(location_type=zip_lookup['location_type'], location=zip_lookup['location'],
                           sha1=zip_lookup['sha1'])
     stimuli_directory = unzip(zip_path)
-    loader = StimulusSetLoader(csv_path=csv_path, stimuli_directory=stimuli_directory, cls=csv_lookup['class'])
+    loader = StimulusSetLoader(
+        csv_path=csv_path,
+        stimuli_directory=stimuli_directory,
+        cls=resolve_stimulus_set_class(csv_lookup['class'])
+    )
     stimulus_set = loader.load()
     stimulus_set.identifier = identifier
     # ensure perfect overlap
