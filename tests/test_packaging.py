@@ -135,3 +135,28 @@ def test_package_data_assembly():
     assert gotten is not None
 
 
+@pytest.mark.private_access
+def test_package_extras():
+    if STIMULUS_SET_IDENTIFIER not in brainio.list_stimulus_sets():
+        test_package_stimulus_set()
+    assy = DataAssembly(
+        data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
+        coords={
+            'image_id': ("presentation", ["n"+str(i) for i in range(6)]),
+            'image_type': ("presentation", ["foo"]*6),
+            'neuroid_id': ("neuroid", list("ABC")),
+            'neuroid_type': ("neuroid", ["bar"]*3),
+            'time_bin_start': ('time_bin', [0]),
+            'time_bin_end': ('time_bin', [10]),
+        },
+        dims=['presentation', 'neuroid', 'time_bin']
+    )
+    identifier = "test.package_assembly"
+    assy.name = "test_extras"
+    extras = [assy]
+    package_data_assembly(TEST_CATALOG_NAME, assy, identifier, STIMULUS_SET_IDENTIFIER, "DataAssembly", "brainio-temp", extras)
+    assert identifier in lookup.list_assemblies()
+    gotten = brainio.get_assembly(identifier)
+    assert gotten is not None
+
+

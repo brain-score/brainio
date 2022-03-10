@@ -13,6 +13,7 @@ from PIL import Image
 import brainio.assemblies
 from brainio import lookup, list_stimulus_sets
 from brainio.lookup import TYPE_ASSEMBLY, TYPE_STIMULUS_SET, sha1_hash
+from xarray import DataArray
 
 _logger = logging.getLogger(__name__)
 
@@ -172,10 +173,11 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
 
 
-def write_netcdf(assembly, target_netcdf_file):
+def write_netcdf(assembly, target_netcdf_file, append=False, group=None):
     _logger.debug(f"Writing assembly to {target_netcdf_file}")
     assembly = assembly.reset_index(list(assembly.indexes))
-    assembly.to_netcdf(target_netcdf_file)
+    mode = "a" if append else "w"
+    assembly.to_netcdf(target_netcdf_file, mode=mode, group=group)
     sha1 = sha1_hash(target_netcdf_file)
     return sha1
 
@@ -189,7 +191,7 @@ def verify_assembly(assembly, assembly_class):
 
 
 def package_data_assembly(catalog_name, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
-                          assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib"):
+                          assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib", extras=None):
     """
     Package a set of data along with its metadata for the BrainIO system.
     :param catalog_name: The name of the lookup catalog to add the data assembly to.
@@ -226,6 +228,10 @@ def package_data_assembly(catalog_name, proto_data_assembly, assembly_identifier
 
     # execute
     netcdf_kf_sha1 = write_netcdf(proto_data_assembly, target_netcdf_path)
+    if extras:
+        for ex in extras:
+            assert isinstance(ex, DataArray)
+            netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group="group_"+ex.name)
     upload_to_s3(target_netcdf_path, bucket_name, s3_key)
     lookup.append(
         catalog_name=catalog_name,
