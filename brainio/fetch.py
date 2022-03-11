@@ -133,13 +133,13 @@ class AssemblyLoader:
 
 
 class StimulusSetLoader:
-    def __init__(self, csv_path, stimuli_directory, cls):
+    def __init__(self, csv_path, stimuli_directory, sampling_factor=1):
         self.csv_path = csv_path
         self.stimuli_directory = stimuli_directory
-        self.cls = cls
+        self.sampling_factor = sampling_factor
 
     def load(self):
-        stimulus_set = pd.read_csv(self.csv_path)
+        stimulus_set = pd.read_csv(self.csv_path)[::self.sampling_factor]
         stimulus_set = StimulusSet(stimulus_set)
         stimulus_set.image_paths = {row['image_id']: os.path.join(self.stimuli_directory, row['filename'])
                                     for _, row in stimulus_set.iterrows()}
