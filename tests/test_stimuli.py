@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 import imageio
 import numpy as np
@@ -8,9 +7,6 @@ import pytest
 
 import brainio
 from brainio.stimuli import StimulusSet
-
-
-stimulus_set_identifier = "test.TenImages"
 
 
 class TestPreservation:
@@ -73,37 +69,7 @@ def test_existence(stimulus_set_identifier):
     assert brainio.get_stimulus_set(stimulus_set_identifier) is not None
 
 
-def get_csv_path(check=True):
-    p = Path(__file__).parent / 'images/image_test_ten_images.csv'
-    if check:
-        assert p.exists()
-    return p
-
-
-def get_dir_path(check=True):
-    p = Path(__file__).parent / 'images'
-    if check:
-        assert p.exists()
-        assert p.is_dir()
-        assert list(p.iterdir())
-    return p
-
-
-def make_stimulus_set_df(check=True):
-    df = pd.DataFrame({'image_id': "n" + str(i), 'filename': f'n{i}.png', 'thing': f'foo{i}'} for i in range(10))
-    if check:
-        assert len(df) == 10
-        assert len(df.columns) == 3
-    return df
-
-
-def make_csv():
-    p = get_csv_path(check=False)
-    df = make_stimulus_set_df()
-    df.to_csv(p, index=False)
-
-
-def test_from_files():
+def test_from_files(get_csv_path, get_dir_path):
     p = get_csv_path()
     d = get_dir_path()
     s = brainio.stimuli.StimulusSet.from_files(p, d)

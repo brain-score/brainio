@@ -157,14 +157,14 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
     # link to csv and zip from same identifier. The csv however is the only one of the two rows with a class.
     lookup.append(
-        catalog_name=catalog_name,
+        catalog_identifier=catalog_name,
         object_identifier=stimulus_set_identifier, cls='StimulusSet',
         lookup_type=TYPE_STIMULUS_SET,
         bucket_name=bucket_name, sha1=csv_sha1, s3_key=csv_file_name,
         stimulus_set_identifier=None
     )
     lookup.append(
-        catalog_name=catalog_name,
+        catalog_identifier=catalog_name,
         object_identifier=stimulus_set_identifier, cls=None,
         lookup_type=TYPE_STIMULUS_SET,
         bucket_name=bucket_name, sha1=image_zip_sha1, s3_key=zip_file_name,
@@ -190,11 +190,11 @@ def verify_assembly(assembly, assembly_class):
                    set(assembly.dims) == {'presentation', 'neuroid', 'time_bin'}
 
 
-def package_data_assembly(catalog_name, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
+def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
                           assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib", extras=None):
     """
     Package a set of data along with its metadata for the BrainIO system.
-    :param catalog_name: The name of the lookup catalog to add the data assembly to.
+    :param catalog_identifier: The name of the lookup catalog to add the data assembly to.
     :param proto_data_assembly: An xarray DataArray containing experimental measurements and all related metadata.
         * The dimensions of a neural DataArray must be
             * presentation
@@ -234,7 +234,7 @@ def package_data_assembly(catalog_name, proto_data_assembly, assembly_identifier
             netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group="group_"+ex.name)
     upload_to_s3(target_netcdf_path, bucket_name, s3_key)
     lookup.append(
-        catalog_name=catalog_name,
+        catalog_identifier=catalog_identifier,
         object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
         lookup_type=TYPE_ASSEMBLY,
         bucket_name=bucket_name, sha1=netcdf_kf_sha1,

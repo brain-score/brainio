@@ -1,21 +1,17 @@
 import os
-from pathlib import Path
 
 import pytest
-from brainio.packaging import write_netcdf
-from pytest import approx
 import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray import DataArray
-from PIL import Image
 
 import brainio
 from brainio import assemblies
 from brainio import fetch
 from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath
 
-from .test_stimuli import test_from_files as get_stimulus_set, stimulus_set_identifier
+from .test_stimuli import test_from_files as get_stimulus_set
 
 
 def test_get_levels():
@@ -434,39 +430,11 @@ def test_synthetic(assembly, shape, nans):
     assert np.count_nonzero(np.isnan(assy)) == nans
 
 
-def get_nc_path(check=True):
-    p = Path(__file__).parent/'files/assy_test_TestMe.nc'
-    if check:
-        assert p.exists()
-    return p
-
-
-def make_proto_assembly():
-    a = DataAssembly(
-        data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
-        coords={
-            'neuroid_id': ("neuroid", ['alpha','beta', 'gamma']),
-            'foo': ("neuroid", [1, 2, 5]),
-            'image_id': ('presentation', ['n0', 'n1', 'n1', 'n0', 'n4', 'n9']),
-            'repetition': ('presentation', [1, 1, 2, 1, 1, 1]),
-        },
-        dims=['presentation', 'neuroid']
-    )
-    return a
-
-
-def make_nc():
-    a = make_proto_assembly()
-    p = get_nc_path(check=False)
-    write_netcdf(a, p)
-
-
-
 class TestFromFiles:
-    def test_from_files(self):
-        p = get_nc_path()
+    def test_from_files(self, test_stimulus_set_identifier, get_nc_path):
+        p = get_nc_path
         s = get_stimulus_set()
-        a = brainio.assemblies.DataAssembly.from_files(p, stimulus_set_identifier, s)
+        a = brainio.assemblies.DataAssembly.from_files(p, test_stimulus_set_identifier, s)
         assert a.shape == (6, 3)
 
 

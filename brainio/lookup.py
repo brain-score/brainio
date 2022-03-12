@@ -5,47 +5,47 @@ from pathlib import Path
 import entrypoints
 import numpy as np
 import pandas as pd
+from brainio.catalogs import Catalog, CATALOG_PATH_KEY, SOURCE_CATALOG
 
-LOOKUP_SOURCE = "lookup_source"
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
-CATALOG_PATH_KEY = "catalog_path"
 _catalogs = {}
 _concat_catalogs = None
 
 _logger = logging.getLogger(__name__)
 
 
-def list_catalogs():
+def list_installed_catalogs():
     return list(entrypoints.get_group_named(ENTRYPOINT).keys())
 
 
-def load_lookup(name, entry_point):
-    df = entry_point.load()()
-    df[LOOKUP_SOURCE] = name
-    return df
+def _load_catalog(identifier, entry_point):
+    catalog = entry_point.load()()
+    assert isinstance(catalog, Catalog)
+    assert catalog.identifier == identifier
+    return catalog
 
 
-def get_lookups():
-    lookups = entrypoints.get_group_named(ENTRYPOINT)
-    dfs = {}
-    for k, v in lookups.items():
-        df = load_lookup(k, v)
-        dfs[k] = df
-    return dfs
+def _load_installed_catalogs():
+    installed_catalogs = entrypoints.get_group_named(ENTRYPOINT)
+    catalogs = {}
+    for k, v in installed_catalogs.items():
+        catalog = _load_catalog(k, v)
+        catalogs[k] = catalog
+    return catalogs
 
 
 def get_catalogs():
     global _catalogs
     if not _catalogs:
-        _logger.debug(f"Loading lookup from entrypoints")
-        print(f"Loading lookup from entrypoints")
-        _catalogs = get_lookups()
+        _logger.debug(f"Loading catalog from entrypoints")
+        print(f"Loading catalog from entrypoints")
+        _catalogs = _load_installed_catalogs()
     return _catalogs
 
 
-def data():
+def combined_catalog():
     global _concat_catalogs
     if _concat_catalogs is None:
         catalogs = get_catalogs()
@@ -54,17 +54,17 @@ def data():
 
 
 def list_stimulus_sets():
-    stimuli_rows = data()[data()['lookup_type'] == TYPE_STIMULUS_SET]
+    stimuli_rows = combined_catalog()[combined_catalog()['lookup_type'] == TYPE_STIMULUS_SET]
     return sorted(list(set(stimuli_rows['identifier'])))
 
 
 def list_assemblies():
-    assembly_rows = data()[data()['lookup_type'] == TYPE_ASSEMBLY]
+    assembly_rows = combined_catalog()[combined_catalog()['lookup_type'] == TYPE_ASSEMBLY]
     return sorted(list(set(assembly_rows['identifier'])))
 
 
 def lookup_stimulus_set(identifier):
-    lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_STIMULUS_SET)]
+    lookup = combined_catalog()[(combined_catalog()['identifier'] == identifier) & (combined_catalog()['lookup_type'] == TYPE_STIMULUS_SET)]
     if len(lookup) == 0:
         raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
     csv_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_csv_lookup, label="CSV")
@@ -73,7 +73,7 @@ def lookup_stimulus_set(identifier):
 
 
 def _lookup_stimulus_set_filtered(lookup, filter_func, label):
-    cols = [n for n in lookup.columns if n != LOOKUP_SOURCE]
+    cols = [n for n in lookup.columns if n != SOURCE_CATALOG]
     # filter for csv vs. zip
     # if there are any groups of rows where every field except source is the same,
     # we only want one from each group
@@ -89,10 +89,10 @@ def _lookup_stimulus_set_filtered(lookup, filter_func, label):
 
 
 def lookup_assembly(identifier):
-    lookup = data()[(data()['identifier'] == identifier) & (data()['lookup_type'] == TYPE_ASSEMBLY)]
+    lookup = combined_catalog()[(combined_catalog()['identifier'] == identifier) & (combined_catalog()['lookup_type'] == TYPE_ASSEMBLY)]
     if len(lookup) == 0:
         raise AssemblyLookupError(f"assembly {identifier} not found")
-    cols = [n for n in lookup.columns if n != LOOKUP_SOURCE]
+    cols = [n for n in lookup.columns if n != SOURCE_CATALOG]
     # if there are any groups of rows where every field except source is the same,
     # we only want one from each group
     de_dupe = lookup.drop_duplicates(subset=cols)
@@ -110,14 +110,14 @@ class AssemblyLookupError(KeyError):
     pass
 
 
-def append(catalog_name, object_identifier, cls, lookup_type,
+def append(catalog_identifier, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
     global _catalogs
     global _concat_catalogs
     catalogs = get_catalogs()
-    catalog = catalogs[catalog_name]
+    catalog = catalogs[catalog_identifier]
     catalog_path = Path(catalog.attrs[CATALOG_PATH_KEY])
-    _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_name}")
+    _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_identifier}")
     object_lookup = {
         'identifier': object_identifier,
         'lookup_type': lookup_type,
@@ -126,7 +126,7 @@ def append(catalog_name, object_identifier, cls, lookup_type,
         'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
         'sha1': sha1,
         'stimulus_set_identifier': stimulus_set_identifier,
-        'lookup_source': catalog_name,
+        'lookup_source': catalog_identifier,
     }
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
@@ -148,7 +148,7 @@ def append(catalog_name, object_identifier, cls, lookup_type,
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
     catalog = catalog.append(add_lookup)
     catalog.to_csv(catalog_path, index=False)
-    _catalogs[catalog_name] = catalog
+    _catalogs[catalog_identifier] = catalog
     _concat_catalogs = None
 
 
