@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 
 import brainio.assemblies
-from brainio import lookup, list_stimulus_sets
+from brainio import lookup, list_stimulus_sets, fetch
 from brainio.lookup import TYPE_ASSEMBLY, TYPE_STIMULUS_SET, sha1_hash
 from xarray import DataArray
 
@@ -143,10 +143,10 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     image_store_identifier = "image_" + stimulus_set_identifier.replace(".", "_")
     # - csv
     csv_file_name = image_store_identifier + ".csv"
-    target_csv_path = Path(__file__).parent / csv_file_name
+    target_csv_path = Path(fetch.get_local_data_path()) / image_store_identifier / csv_file_name
     # - zip
     zip_file_name = image_store_identifier + ".zip"
-    target_zip_path = Path(__file__).parent / zip_file_name
+    target_zip_path = Path(fetch.get_local_data_path()) / image_store_identifier / zip_file_name
     # create csv and zip files
     image_zip_sha1, zip_filenames = create_image_zip(proto_stimulus_set, str(target_zip_path))
     assert 'filename' not in proto_stimulus_set.columns, "StimulusSet already has column 'filename'"
@@ -174,9 +174,11 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
 
 
 def write_netcdf(assembly, target_netcdf_file, append=False, group=None):
+    target_netcdf_file = Path(target_netcdf_file)
     _logger.debug(f"Writing assembly to {target_netcdf_file}")
     assembly = assembly.reset_index(list(assembly.indexes))
     mode = "a" if append else "w"
+    target_netcdf_file.parent.mkdir(parents=True, exist_ok=True)
     assembly.to_netcdf(target_netcdf_file, mode=mode, group=group)
     sha1 = sha1_hash(target_netcdf_file)
     return sha1
@@ -223,7 +225,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
     # identifiers
     assembly_store_identifier = "assy_" + assembly_identifier.replace(".", "_")
     netcdf_file_name = assembly_store_identifier + ".nc"
-    target_netcdf_path = Path(__file__).parent / netcdf_file_name
+    target_netcdf_path = Path(fetch.get_local_data_path()) / assembly_store_identifier / netcdf_file_name
     s3_key = netcdf_file_name
 
     # execute

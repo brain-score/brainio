@@ -331,22 +331,22 @@ class TestMultiDimApply:
     pytest.param('dicarlo.BashivanKar2019.naturalistic', marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.BashivanKar2019.synthetic', marks=[pytest.mark.private_access]),
 ])
-def test_existence(assembly_identifier):
+def test_existence(assembly_identifier, brainio_home_session):
     assert brainio.get_assembly(assembly_identifier) is not None
 
 
-def test_nr_assembly_ctor():
+def test_nr_assembly_ctor(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     assert isinstance(assy_hvm, DataAssembly)
 
 
-def test_load():
+def test_load(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     assert assy_hvm.shape == (256, 148480, 1)
     print(assy_hvm)
 
 
-def test_repr():
+def test_repr(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     repr_hvm = repr(assy_hvm)
     assert "neuroid" in repr_hvm
@@ -357,13 +357,13 @@ def test_repr():
     print(repr_hvm)
 
 
-def test_getitem():
+def test_getitem(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     single = assy_hvm[0, 0, 0]
     assert type(single) is type(assy_hvm)
 
 
-def test_fetch():
+def test_fetch(brainio_home):
     local_path = fetch.fetch_file(
         location_type='S3',
         location='https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015_public.nc',
@@ -371,7 +371,7 @@ def test_fetch():
     assert os.path.exists(local_path)
 
 
-def test_wrap():
+def test_wrap(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     hvm_v3 = assy_hvm.sel(variation=3)
     assert isinstance(hvm_v3, assemblies.NeuronRecordingAssembly)
@@ -395,7 +395,7 @@ def test_wrap():
     assert isinstance(hvm_it_v3_t, assemblies.NeuronRecordingAssembly)
 
 
-def test_multi_group():
+def test_multi_group(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     hvm_it_v3 = assy_hvm.sel(variation=3).sel(region="IT")
     hvm_it_v3.load()
@@ -404,7 +404,7 @@ def test_multi_group():
     assert "object_name" in hvm_it_v3_obj.indexes["presentation"].names
 
 
-def test_stimulus_set_from_assembly():
+def test_stimulus_set_from_assembly(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     stimulus_set = assy_hvm.attrs["stimulus_set"]
     assert stimulus_set.shape[0] == np.unique(assy_hvm["image_id"]).shape[0]
@@ -424,16 +424,16 @@ def test_inplace():
     pytest.param('dicarlo.BashivanKar2019.naturalistic', (24320, 233, 1), 309760, marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.BashivanKar2019.synthetic', (21360, 233, 1), 4319940, marks=[pytest.mark.private_access]),
 ])
-def test_synthetic(assembly, shape, nans):
+def test_synthetic(assembly, shape, nans, brainio_home_session):
     assy = brainio.get_assembly(assembly)
     assert assy.shape == shape
     assert np.count_nonzero(np.isnan(assy)) == nans
 
 
 class TestFromFiles:
-    def test_from_files(self, test_stimulus_set_identifier, get_nc_path):
+    def test_from_files(self, test_stimulus_set_identifier, get_nc_path, get_csv_path, get_dir_path):
         p = get_nc_path
-        s = get_stimulus_set()
+        s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
         a = brainio.assemblies.DataAssembly.from_files(p, test_stimulus_set_identifier, s)
         assert a.shape == (6, 3)
 

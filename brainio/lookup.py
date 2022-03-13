@@ -5,12 +5,12 @@ from pathlib import Path
 import entrypoints
 import numpy as np
 import pandas as pd
-from brainio.catalogs import Catalog, CATALOG_PATH_KEY, SOURCE_CATALOG
+from brainio.catalogs import Catalog, SOURCE_CATALOG
 
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
-_catalogs = {}
+_catalogs = None
 _concat_catalogs = None
 
 _logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def _load_installed_catalogs():
 
 def get_catalogs():
     global _catalogs
-    if not _catalogs:
+    if _catalogs is None:
         _logger.debug(f"Loading catalog from entrypoints")
         print(f"Loading catalog from entrypoints")
         _catalogs = _load_installed_catalogs()
@@ -49,6 +49,8 @@ def combined_catalog():
     global _concat_catalogs
     if _concat_catalogs is None:
         catalogs = get_catalogs()
+        for identifier, catalog in catalogs.items():
+            catalog[SOURCE_CATALOG] = identifier
         _concat_catalogs = pd.concat(catalogs.values(), ignore_index=True)
     return _concat_catalogs
 
@@ -116,7 +118,7 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
     global _concat_catalogs
     catalogs = get_catalogs()
     catalog = catalogs[catalog_identifier]
-    catalog_path = Path(catalog.attrs[CATALOG_PATH_KEY])
+    catalog_path = catalog.source_path
     _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_identifier}")
     object_lookup = {
         'identifier': object_identifier,
@@ -150,6 +152,7 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
     catalog.to_csv(catalog_path, index=False)
     _catalogs[catalog_identifier] = catalog
     _concat_catalogs = None
+    return catalog
 
 
 def _is_csv_lookup(data_row):

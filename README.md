@@ -176,22 +176,23 @@ setup(
         ],
     },)
 ```
-Then edit `entrypoint.py`:  
+Then edit `entrypoint.py`:
+
 ```python
 import logging
 from pathlib import Path
 import pandas as pd
-from brainio.lookup import CATALOG_PATH_KEY
+from brainio.catalogs import Catalog
 
 _logger = logging.getLogger(__name__)
+
 
 def my_project():
     path = Path(__file__).parent / "lookup.csv"
     _logger.debug(f"Loading lookup from {path}")
-    print(f"Loading lookup from {path}") 
-    df = pd.read_csv(path)
-    df.attrs[CATALOG_PATH_KEY] = str(path)
-    return df
+    print(f"Loading lookup from {path}")
+    catalog = Catalog.from_file("my_project", path)
+    return catalog
 ```
 Now install your project in editable mode:  
 ```shell

@@ -78,7 +78,7 @@ def test_list_catalogs(test_catalog_identifier):
     assert test_catalog_identifier in catalog_names
 
 
-def test_append(test_catalog_identifier, test_write_netcdf_path):
+def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_file):
     assy = DataAssembly(
         data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
         coords={
@@ -90,16 +90,22 @@ def test_append(test_catalog_identifier, test_write_netcdf_path):
     )
     identifier = "test.append"
     netcdf_sha1 = write_netcdf(assy, str(test_write_netcdf_path))
-    lookup.append(test_catalog_identifier, identifier, "DataAssembly", TYPE_ASSEMBLY, "brainio-temp", netcdf_sha1, "assy_test_append.nc", "dicarlo.hvm")
-    assert identifier in list(lookup.get_catalogs()[test_catalog_identifier]["identifier"])
+    catalog = lookup.get_catalogs()[test_catalog_identifier]
+    print(catalog.source_path)
+    restore_this_file(catalog.source_path)
+    catalog = lookup.append(test_catalog_identifier, identifier, "DataAssembly", TYPE_ASSEMBLY, "brainio-temp", netcdf_sha1, "assy_test_append.nc", "dicarlo.hvm")
+    assert identifier in list(catalog["identifier"])
     assert identifier in lookup.list_assemblies()
 
 
 @pytest.mark.private_access
-def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier):
+def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file):
     stimulus_set = StimulusSet([{'image_id': "n"+str(i), 'thing': 'foo'} for i in range(10)])
     stimulus_set.image_paths = {"n"+str(i): Path(__file__).parent / f'images/n{i}.png' for i in range(10)}
     identifier = test_stimulus_set_identifier
+    catalog = lookup.get_catalogs()[test_catalog_identifier]
+    print(catalog.source_path)
+    restore_this_file(catalog.source_path)
     package_stimulus_set(test_catalog_identifier, stimulus_set, identifier, bucket_name="brainio-temp")
     assert identifier in lookup.list_stimulus_sets()
     gotten = brainio.get_stimulus_set(identifier)
@@ -107,9 +113,10 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
 
 
 @pytest.mark.private_access
-def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identifier):
+def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
+                               restore_this_file):
     if test_stimulus_set_identifier not in brainio.list_stimulus_sets():
-        test_package_stimulus_set()
+        test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file)
     assy = DataAssembly(
         data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
         coords={
@@ -123,6 +130,9 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
         dims=['presentation', 'neuroid', 'time_bin']
     )
     identifier = "test.package_assembly"
+    catalog = lookup.get_catalogs()[test_catalog_identifier]
+    print(catalog.source_path)
+    restore_this_file(catalog.source_path)
     package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier, "DataAssembly", "brainio-temp")
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
@@ -130,9 +140,9 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
 
 
 @pytest.mark.private_access
-def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier):
+def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file):
     if test_stimulus_set_identifier not in brainio.list_stimulus_sets():
-        test_package_stimulus_set()
+        test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file)
     assy = DataAssembly(
         data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
         coords={
@@ -149,7 +159,11 @@ def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier):
     assy_extra = assy.copy()
     assy_extra.name = "test_extras"
     extras = [assy_extra]
-    package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier, "DataAssembly", "brainio-temp", extras)
+    catalog = lookup.get_catalogs()[test_catalog_identifier]
+    print(catalog.source_path)
+    restore_this_file(catalog.source_path)
+    package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier,
+                          "DataAssembly", "brainio-temp", extras)
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None

@@ -16,9 +16,17 @@ import brainio.stimuli as stimuli
 from brainio.stimuli import StimulusSetLoader
 from brainio.lookup import lookup_assembly, lookup_stimulus_set, sha1_hash
 
-_local_data_path = os.path.expanduser(os.getenv('BRAINIO_HOME', '~/.brainio'))
+BRAINIO_HOME = 'BRAINIO_HOME'
 
 _logger = logging.getLogger(__name__)
+_local_data_path = None
+
+
+def get_local_data_path():
+    global _local_data_path
+    if _local_data_path is None:
+        _local_data_path = os.path.expanduser(os.getenv(BRAINIO_HOME, '~/.brainio'))
+    return _local_data_path
 
 
 class Fetcher(object):
@@ -27,7 +35,7 @@ class Fetcher(object):
     def __init__(self, location, local_filename):
         self.location = location
         self.local_filename = local_filename
-        self.local_dir_path = os.path.join(_local_data_path, self.local_filename)
+        self.local_dir_path = os.path.join(get_local_data_path(), self.local_filename)
         os.makedirs(self.local_dir_path, exist_ok=True)
 
     def fetch(self):

@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import pandas as pd
 from pandas import DataFrame
 
-CATALOG_PATH_KEY = "catalog_path"
 
 class Catalog(DataFrame):
     # http://pandas.pydata.org/pandas-docs/stable/development/extending.html#subclassing-pandas-data-structures
@@ -20,7 +21,7 @@ class Catalog(DataFrame):
 class CatalogLoader:
     def __init__(self, identifier, csv_path, cls=Catalog, url=None):
         self.identifier = identifier
-        self.csv_path = csv_path
+        self.csv_path = Path(csv_path)
         self.cls = cls
         self.url = url
 

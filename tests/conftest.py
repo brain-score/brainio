@@ -1,6 +1,9 @@
+import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 
+import brainio.fetch
 import pandas as pd
 import pytest
 from brainio.assemblies import DataAssembly
@@ -20,9 +23,8 @@ def get_nc_path(check=True):
 
 
 @pytest.fixture
-def test_write_netcdf_path(files_to_remove):
-    p = Path("test.nc")
-    files_to_remove.append(p)
+def test_write_netcdf_path(tmp_path):
+    p = tmp_path/"test.nc"
     return p
 
 
@@ -92,8 +94,44 @@ def files_to_remove():
     yield paths
     for path in paths:
         p = Path(path)
-        mtime = datetime.fromtimestamp(p.stat().st_mtime_ns * 1e-9)
+        mtime = datetime.fromtimestamp(p.stat().st_ctime_ns * 1e-9)
         if p.exists() and mtime > now:
             p.unlink()
 
+
+@pytest.fixture
+def restore_this_file():
+    now = datetime.now()
+    paths = {}
+    def f(path):
+        path = Path(path)
+        assert path.exists()
+        assert path.is_file()
+        tmp = path.with_suffix(path.suffix + ".bak")
+        paths[path] = tmp
+        shutil.copy2(str(path), str(tmp))
+    yield f
+    for path in paths:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime_ns * 1e-9)
+        if path.exists() and mtime > now:
+            path.unlink()
+            shutil.move(paths[path], path)
+
+
+@pytest.fixture
+def brainio_home(tmp_path, monkeypatch):
+    monkeypatch.setattr(brainio.fetch, "_local_data_path", str(tmp_path))
+    yield tmp_path
+
+
+@pytest.fixture(scope="session")
+def home_path(tmp_path_factory):
+    home_path = tmp_path_factory.mktemp("brainio_home")
+    yield home_path
+
+
+@pytest.fixture # for tests not intended to test fetching and loading specifically
+def brainio_home_session(monkeypatch, home_path):
+    monkeypatch.setattr(brainio.fetch, "_local_data_path", str(home_path))
+    yield home_path
 

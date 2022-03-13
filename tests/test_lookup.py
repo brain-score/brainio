@@ -72,8 +72,8 @@ def test_catalogs():
     assert "brainio_test" in cats
     assert "brainio_test2" in cats
     dfs = brainio.lookup._load_installed_catalogs()
-    assert dfs["brainio_test"].attrs[brainio.lookup.CATALOG_PATH_KEY].endswith(".csv")
-    assert dfs["brainio_test2"].attrs[brainio.lookup.CATALOG_PATH_KEY].endswith(".csv")
+    assert str(dfs["brainio_test"].source_path).endswith(".csv")
+    assert str(dfs["brainio_test2"].source_path).endswith(".csv")
     assert len(dfs["brainio_test"]) == 12
     assert len(dfs["brainio_test2"]) == 9
     concat = brainio.lookup.combined_catalog()

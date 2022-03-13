@@ -27,7 +27,7 @@ class TestPreservation:
         assert s.get_image(11) is not None
 
 
-def test_get_stimulus_set():
+def test_get_stimulus_set(brainio_home):
     stimulus_set = brainio.get_stimulus_set("dicarlo.hvm-public")
     assert "image_id" in stimulus_set.columns
     assert set(stimulus_set.columns).issuperset({'image_id', 'object_name', 'variation', 'category_name',
@@ -43,12 +43,12 @@ def test_get_stimulus_set():
         assert extension in ['.png', '.PNG', '.jpg', '.jpeg', '.JPG', '.JPEG']
 
 
-def test_loadname_dicarlo_hvm():
+def test_loadname_dicarlo_hvm(brainio_home_session):
     assert brainio.get_stimulus_set(identifier="dicarlo.hvm-public") is not None
 
 
 class TestLoadImage:
-    def test_dicarlohvm(self):
+    def test_dicarlohvm(self, brainio_home_session):
         stimulus_set = brainio.get_stimulus_set(identifier="dicarlo.hvm-public")
         paths = stimulus_set.image_paths.values()
         for path in paths:
@@ -65,19 +65,17 @@ class TestLoadImage:
     pytest.param('dicarlo.BashivanKar2019.naturalistic', marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.BashivanKar2019.synthetic', marks=[pytest.mark.private_access]),
 ])
-def test_existence(stimulus_set_identifier):
+def test_existence(stimulus_set_identifier, brainio_home_session):
     assert brainio.get_stimulus_set(stimulus_set_identifier) is not None
 
 
 def test_from_files(get_csv_path, get_dir_path):
-    p = get_csv_path()
-    d = get_dir_path()
-    s = brainio.stimuli.StimulusSet.from_files(p, d)
+    s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
     assert "image_id" in s.columns
     return s
 
 
 class TestFromFiles:
-    def test_basic(self):
-        test_from_files()
+    def test_basic(self, get_csv_path, get_dir_path):
+        test_from_files(get_csv_path, get_dir_path)
 

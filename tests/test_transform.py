@@ -113,7 +113,7 @@ class TestSubset:
         assert (subset_assembly == target_assembly).all()
 
     @pytest.mark.private_access
-    def test_category_subselection(self):
+    def test_category_subselection(self, brainio_home):
         assembly = get_assembly('dicarlo.MajajHong2015')
         categories = np.unique(assembly['category_name'])
         target = xr.DataArray([0] * len(categories), coords={'category_name': categories},
