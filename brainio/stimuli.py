@@ -1,6 +1,9 @@
+import logging
 import os
 
 import pandas as pd
+
+_logger = logging.getLogger(__name__)
 
 
 class StimulusSet(pd.DataFrame):

@@ -11,7 +11,6 @@ from six.moves.urllib.parse import urlparse
 from tqdm import tqdm
 
 import brainio.assemblies as assemblies
-from brainio.assemblies import AssemblyLoader
 import brainio.stimuli as stimuli
 from brainio.stimuli import StimulusSetLoader
 from brainio.lookup import lookup_assembly, lookup_stimulus_set, sha1_hash
@@ -152,14 +151,15 @@ def resolve_stimulus_set_class(class_name):
 
 def get_assembly(identifier):
     assembly_lookup = lookup_assembly(identifier)
-    local_path = fetch_file(location_type=assembly_lookup['location_type'],
+    file_path = fetch_file(location_type=assembly_lookup['location_type'],
                             location=assembly_lookup['location'], sha1=assembly_lookup['sha1'])
     stimulus_set = get_stimulus_set(assembly_lookup['stimulus_set_identifier'])
-    loader = AssemblyLoader(
-        local_path,
+    cls = resolve_assembly_class(assembly_lookup['class'])
+    loader = cls.get_loader_class()(
+        cls=cls,
+        file_path=file_path,
         stimulus_set_identifier=assembly_lookup['stimulus_set_identifier'],
         stimulus_set=stimulus_set,
-        cls=resolve_assembly_class(assembly_lookup['class']),
     )
     assembly = loader.load()
     assembly.attrs['identifier'] = identifier

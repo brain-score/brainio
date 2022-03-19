@@ -4,6 +4,7 @@ import pytest
 import numpy as np
 import pandas as pd
 import xarray as xr
+from brainio.stimuli import StimulusSet
 from tests.conftest import get_nc_extras_path
 from xarray import DataArray
 
@@ -12,8 +13,6 @@ from brainio import assemblies
 from brainio import fetch
 from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath, MetadataAssembly, \
     SpikeTimesAssembly
-
-from .test_stimuli import test_from_files as get_stimulus_set
 
 
 def test_get_levels():
@@ -435,22 +434,21 @@ def test_synthetic(assembly, shape, nans, brainio_home_session):
 class TestFromFiles:
     def test_from_files(self, test_stimulus_set_identifier, get_nc_path, get_csv_path, get_dir_path):
         p = get_nc_path
-        s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
-        a = brainio.assemblies.DataAssembly.from_files(p, test_stimulus_set_identifier, s)
+        s = StimulusSet.from_files(get_csv_path, get_dir_path)
+        a = DataAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
         assert a.shape == (6, 3)
 
     def test_load_extras(self, test_stimulus_set_identifier, get_csv_path, get_dir_path):
         p = get_nc_extras_path()
-        s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
-        a = SpikeTimesAssembly.from_files(p, test_stimulus_set_identifier, s)
+        s = StimulusSet.from_files(get_csv_path, get_dir_path)
+        a = SpikeTimesAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
         assert isinstance(a, SpikeTimesAssembly)
-        assert a.shape == (1000)
+        assert a.shape == (1000,)
         assert "test" in a.attrs
-        assert "stimulus_set" in a.attrs
         extra = a.attrs["test"]
-        assert extra
+        assert extra is not None
         assert isinstance(extra, MetadataAssembly)
         assert "stimulus_set" in extra.attrs
-        assert extra.shape == (40)
+        assert extra.shape == (40,)
 
 

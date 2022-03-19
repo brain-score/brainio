@@ -230,8 +230,8 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
 
     # execute
     netcdf_kf_sha1 = write_netcdf(proto_data_assembly, target_netcdf_path)
-    if extras:
-        for ex in extras:
+    if extras is not None:
+        for k, ex in extras.items():
             assert isinstance(ex, DataArray)
             netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group="group_"+ex.name)
     upload_to_s3(target_netcdf_path, bucket_name, s3_key)

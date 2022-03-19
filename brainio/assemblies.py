@@ -1,10 +1,15 @@
+import logging
 from collections import OrderedDict, defaultdict
 
 import itertools
+
+import netCDF4
 import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray import DataArray, IndexVariable
+
+_logger = logging.getLogger(__name__)
 
 
 def is_fastpath(*args, **kwargs):
@@ -44,12 +49,16 @@ class DataAssembly(DataArray):
             super(DataAssembly, self).__init__(temp)
 
     @classmethod
-    def from_files(cls, file_path, stimulus_set_identifier, stimulus_set):
-        loader = AssemblyLoader(
-            local_path=file_path,
-            stimulus_set_identifier=stimulus_set_identifier,
-            stimulus_set=stimulus_set,
+    def get_loader_class(cls):
+        return StimulusMergeLoader
+
+    @classmethod
+    def from_files(cls, file_path, **kwargs):
+        loader_class = cls.get_loader_class()
+        loader = loader_class(
             cls=cls,
+            file_path=file_path,
+            **kwargs,
         )
         return loader.load()
 
@@ -233,10 +242,18 @@ class PropertyAssembly(DataAssembly):
     """A PropertyAssembly is a DataAssembly containing single neuronal properties data.  """
     __slots__ = ()
 
+    @classmethod
+    def get_loader_class(cls):
+        return AssemblyLoader
+
 
 class SpikeTimesAssembly(NeuronRecordingAssembly):
     """A SpikeTimesAssembly is a DataAssembly containing a one-dimensional array of neural spike event timestamps.  """
     __slots__ = ()
+
+    @classmethod
+    def get_loader_class(cls):
+        return GroupAppendLoader
 
 
 class MetadataAssembly(DataAssembly):
@@ -350,18 +367,35 @@ class AssemblyLoader:
     Loads an assembly from a file.
     """
 
-    def __init__(self, local_path, stimulus_set_identifier, stimulus_set, cls):
-        self.local_path = local_path
-        self.stimulus_set_identifier = stimulus_set_identifier
-        self.stimulus_set = stimulus_set
+    def __init__(self, cls, file_path, group=None, **kwargs):
         self.assembly_class = cls
+        self.file_path = file_path
+        self.group = group
 
     def load(self):
-        data_array = xr.open_dataarray(self.local_path)
-        if self.assembly_class.__name__ == 'PropertyAssembly':
-            result = data_array
+        if self.group is None:
+            data_array = xr.open_dataarray(self.file_path)
         else:
-            result = self.merge_stimulus_set_meta(data_array, self.stimulus_set)
+            data_array = xr.open_dataarray(self.file_path, group=self.group)
+        result = data_array
+        result = self.assembly_class(data=result)
+        return result
+
+
+class StimulusMergeLoader(AssemblyLoader):
+    """
+    Loads an assembly and add metadata from a stimulus set.
+    """
+
+    def __init__(self, cls, file_path, stimulus_set_identifier=None, stimulus_set=None, **kwargs):
+        super(StimulusMergeLoader, self).__init__(cls, file_path, **kwargs)
+        self.stimulus_set_identifier = stimulus_set_identifier
+        self.stimulus_set = stimulus_set
+
+    def load(self):
+        # data_array = xr.open_dataarray(self.file_path)
+        data_array = super(StimulusMergeLoader, self).load()
+        result = self.merge_stimulus_set_meta(data_array, self.stimulus_set)
         result = self.assembly_class(data=result)
         result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
         result.attrs["stimulus_set"] = self.stimulus_set
@@ -369,9 +403,39 @@ class AssemblyLoader:
 
     def merge_stimulus_set_meta(self, assy, stimulus_set):
         axis_name, index_column = "presentation", "image_id"
+        assy = assy.reset_index(list(assy.indexes))
         df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
         cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
         merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
         for col in stimulus_set.columns:
             assy[col] = (axis_name, merged[col])
         return assy
+
+
+class GroupAppendLoader(StimulusMergeLoader):
+
+    def load(self):
+        data_array = xr.open_dataarray(self.file_path)
+        result = self.assembly_class(data=data_array)
+        nc = netCDF4.Dataset(self.file_path, "r")
+        for group in nc.groups:
+            try:
+                loader_class = MetadataAssembly.get_loader_class()
+                loader = loader_class(
+                    cls=MetadataAssembly,
+                    file_path=self.file_path,
+                    stimulus_set_identifier=self.stimulus_set_identifier,
+                    stimulus_set=self.stimulus_set,
+                    group=group
+                )
+                meta = loader.load()
+                result.attrs[group] = meta
+            except Exception as e:
+                _logger.warning(
+                    f"netCDF file {self.file_path} contains a group that is not loadable as a MetadataAssembly.  ",
+                    exc_info=True
+                )
+        return result
+
+
+
