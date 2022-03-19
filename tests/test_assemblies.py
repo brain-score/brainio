@@ -4,12 +4,14 @@ import pytest
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tests.conftest import get_nc_extras_path
 from xarray import DataArray
 
 import brainio
 from brainio import assemblies
 from brainio import fetch
-from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath
+from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath, MetadataAssembly, \
+    SpikeTimesAssembly
 
 from .test_stimuli import test_from_files as get_stimulus_set
 
@@ -436,5 +438,19 @@ class TestFromFiles:
         s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
         a = brainio.assemblies.DataAssembly.from_files(p, test_stimulus_set_identifier, s)
         assert a.shape == (6, 3)
+
+    def test_load_extras(self, test_stimulus_set_identifier, get_csv_path, get_dir_path):
+        p = get_nc_extras_path()
+        s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
+        a = SpikeTimesAssembly.from_files(p, test_stimulus_set_identifier, s)
+        assert isinstance(a, SpikeTimesAssembly)
+        assert a.shape == (1000)
+        assert "test" in a.attrs
+        assert "stimulus_set" in a.attrs
+        extra = a.attrs["test"]
+        assert extra
+        assert isinstance(extra, MetadataAssembly)
+        assert "stimulus_set" in extra.attrs
+        assert extra.shape == (40)
 
 

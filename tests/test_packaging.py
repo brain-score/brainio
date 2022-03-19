@@ -139,7 +139,6 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     assert gotten is not None
 
 
-@pytest.mark.private_access
 def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file):
     if test_stimulus_set_identifier not in brainio.list_stimulus_sets():
         test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file)

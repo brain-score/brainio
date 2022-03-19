@@ -4,9 +4,10 @@ from datetime import datetime
 from pathlib import Path
 
 import brainio.fetch
+import numpy as np
 import pandas as pd
 import pytest
-from brainio.assemblies import DataAssembly
+from brainio.assemblies import DataAssembly, SpikeTimesAssembly, MetadataAssembly
 from brainio.packaging import write_netcdf
 
 @pytest.fixture
@@ -17,6 +18,13 @@ def test_catalog_identifier():
 @pytest.fixture
 def get_nc_path(check=True):
     p = Path(__file__).parent/'files/assy_test_TestMe.nc'
+    if check:
+        assert p.exists()
+    return p
+
+
+def get_nc_extras_path(check=True):
+    p = Path(__file__).parent/'files/assy_test_package_assembly_extras.nc'
     if check:
         assert p.exists()
     return p
@@ -43,10 +51,80 @@ def make_proto_assembly():
     return a
 
 
+def scattered_floats(lo, hi, num):
+    # a kludge:  looks stochastic, but deterministic
+    mid = (hi + lo) / 2
+    half = mid - lo
+    jump = 8
+    return [mid + np.sin(x) * half for x in range(2, num * (jump + 1), jump)][:num]
+
+
+# taken from values in /braintree/data2/active/users/sachis/projects/oasis900/monkeys/oleo/mworksproc/oleo_oasis900_210216_113846_mwk.csv
+@pytest.fixture
+def make_meta_assembly():
+    coords = {
+        "stim_on_time_ms": ("event", [100]*40),
+        "stim_off_time_ms": ("event", [100]*40),
+        "stim_on_delay_ms": ("event", [300]*40),
+        "stimulus_size_degrees": ("event", [8]*40),
+        "fixation_window_size_degrees": ("event", [2]*40),
+        "fixation_point_size_degrees": ("event", [0.2]*40),
+        "stimulus_presented": ("event", list(range(5))*8),
+        "fixation_correct": ("event", [1]*14+[0]+[1]*25),
+        "stimulus_order_in_trial": ("event", list(range(1, 6))*8),
+        "eye_h_degrees": ("event", [str(scattered_floats(-0.375, -0.275, 200))]*40),
+        "eye_v_degrees": ("event", [str(scattered_floats(0.121, 0.388, 200))]*40),
+        "eye_time_ms": ("event", [str(scattered_floats(-50, 150, 200))]*40),
+        "samp_on_us": ("event", scattered_floats(2_063_400, 18_820_950, 40)),
+        "photodiode_on_us": ("event", scattered_floats(2_088_100, 18_854_550, 40)),
+    }
+    data = coords["photodiode_on_us"][1]
+    a = MetadataAssembly(
+        data=data,
+        coords=coords,
+        dims=['event']
+    )
+    return a
+
+
+@pytest.fixture
+def make_spk_assembly():
+    coords = {
+        "neuroid_id": ("event", ["A-019", "D-009"]*500),
+        "project": ("event", ["test"]*1000),
+        "datetime": ("event", np.repeat(np.datetime64('2021-02-16T11:41:55.000000000'), 1000)),
+        "animal": ("event", ["testo"]*1000),
+        "hemisphere": ("event", ["L", "R"]*500),
+        "region": ("event", ["V4", "IT"]*500),
+        "subregion": ("event", ["V4", "aIT"]*500),
+        "array": ("event", ["6250-002416", "4865-233455"]*500),
+        "bank": ("event", ["A", "D"]*500),
+        "electrode": ("event", ["019", "009"]*500),
+        "column": ("event", [5, 2]*500),
+        "row": ("event", [4, 8]*500),
+        "label": ("event", ["elec46", "elec123"]*500),
+    }
+    data = sorted(scattered_floats(67.7, 21116.2, 1000))
+    a = SpikeTimesAssembly(
+        data=data,
+        coords=coords,
+        dims=['event']
+    )
+    return a
+
+
 def make_nc():
     a = make_proto_assembly()
     p = get_nc_path(check=False)
     write_netcdf(a, p)
+
+
+def make_nc_extras(make_meta_assembly, make_spk_assembly):
+    a = make_spk_assembly
+    m = make_meta_assembly
+    p = get_nc_extras_path(check=False)
+    write_netcdf(a, p)
+    write_netcdf(m, p, append=True, group="test")
 
 
 @pytest.fixture

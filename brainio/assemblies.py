@@ -239,6 +239,11 @@ class SpikeTimesAssembly(NeuronRecordingAssembly):
     __slots__ = ()
 
 
+class MetadataAssembly(DataAssembly):
+    """A SpikeTimesAssembly is a DataAssembly containing a one-dimensional array of neural spike event timestamps.  """
+    __slots__ = ()
+
+
 def coords_for_dim(xr_data, dim, exclude_indexes=True):
     result = OrderedDict()
     for key, value in xr_data.coords.variables.items():
