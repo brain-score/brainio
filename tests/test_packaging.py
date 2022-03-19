@@ -98,6 +98,7 @@ def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_fi
     assert identifier in lookup.list_assemblies()
 
 
+@pytest.mark.private_access
 def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, make_stimulus_set_df, brainio_home, restore_this_file,
                               restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df)
@@ -139,6 +140,7 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     assert gotten is not None
 
 
+@pytest.mark.private_access
 def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file,
                         make_stimulus_set_df, restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df)
