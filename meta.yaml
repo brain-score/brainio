@@ -3,11 +3,12 @@ package:
   version: "0.2"
 
 source:
-  git_rev: "main"
-  git_url: "https://github.com/brain-score/brainio.git"
+  path: .
 
 build:
-  preserve_egg_dir: True
+  number: 0
+  noarch: generic
+  script: {{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt
 
 requirements:
   build:
@@ -18,7 +19,10 @@ requirements:
     - tqdm
     - Pillow
     - entrypoints
-    - xarray ==0.17.0
+    - pytz>=2020.1
+    - numpy>=1.16.5, !=1.21.*
+    - pandas>=1.2.0, !=1.3.0
+    - xarray==0.17.0
     - netcdf4
 
   run:
@@ -28,12 +32,11 @@ requirements:
     - tqdm
     - Pillow
     - entrypoints
-    - xarray
+    - pytz>=2020.1
+    - numpy>=1.16.5, !=1.21.*
+    - pandas>=1.2.0, !=1.3.0
+    - xarray==0.17.0
     - netcdf4
-
-test:
-  imports:
-    - brainio
 
 about:
   home: "https://github.com/brain-score/brainio"
