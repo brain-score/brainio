@@ -1,6 +1,6 @@
 package:
   name: "brainio"
-  version: "0.2"
+  version: "0.2.1"
 
 source:
   path: .
@@ -8,7 +8,7 @@ source:
 build:
   number: 0
   noarch: generic
-  script: {{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt
+  script: pip install -e .
 
 requirements:
   build:
