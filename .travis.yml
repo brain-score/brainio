@@ -14,7 +14,7 @@ before_install:
 - pip install --upgrade pip
 install:
 - pip list
-- pip install setuptools=60.5.0
+- pip install setuptools==60.5.0
 - pip install .[tests]
 - pip install brainio-test/
 - pip list # list installed package versions
