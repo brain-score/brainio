@@ -13,6 +13,7 @@ matrix:
 before_install:
 - pip install --upgrade pip
 install:
+- pip install setuptools==60.5.0
 - pip install .[tests]
 - pip install brainio-test/
 - pip list # list installed package versions
