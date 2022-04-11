@@ -138,6 +138,7 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
+    assert gotten.shape == (6, 3, 1)
 
 
 @pytest.mark.private_access
@@ -166,9 +167,19 @@ def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, b
     assy_extra.name = "test"
     extras = {assy_extra.name: assy_extra}
     package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier,
-                          "DataAssembly", "brainio-temp", extras)
+                          "SpikeTimesAssembly", "brainio-temp", extras)
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
+    assert gotten.attrs["test"] is not None
+    assert gotten.attrs["test"].shape == (6, 3, 1)
+
+
+def test_compression(test_write_netcdf_path, make_spk_assembly):
+    write_netcdf(make_spk_assembly, test_write_netcdf_path, compress=False)
+    uncompressed = test_write_netcdf_path.stat().st_size
+    write_netcdf(make_spk_assembly, test_write_netcdf_path, compress=True)
+    compressed = test_write_netcdf_path.stat().st_size
+    assert uncompressed > compressed
 
 

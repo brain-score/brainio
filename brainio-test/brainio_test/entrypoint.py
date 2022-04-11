@@ -7,6 +7,8 @@ from brainio.catalogs import Catalog
 
 _logger = logging.getLogger(__name__)
 
+# Note that setup.py is where the entrypoint's published name is set
+
 def brainio_test():
     path = Path(__file__).parent / "lookup.csv"
     _logger.debug(f"Loading catalog from {path}")

@@ -173,13 +173,19 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
 
 
-def write_netcdf(assembly, target_netcdf_file, append=False, group=None):
+def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compress=True):
     target_netcdf_file = Path(target_netcdf_file)
     _logger.debug(f"Writing assembly to {target_netcdf_file}")
     assembly = assembly.reset_index(list(assembly.indexes))
     mode = "a" if append else "w"
     target_netcdf_file.parent.mkdir(parents=True, exist_ok=True)
-    assembly.to_netcdf(target_netcdf_file, mode=mode, group=group)
+    if compress:
+        ds = assembly.to_dataset(name="data")
+        compression = dict(zlib=True, complevel=1)
+        encoding = {var: compression for var in ds.variables}
+        ds.to_netcdf(target_netcdf_file, mode=mode, group=group, encoding=encoding)
+    else:
+        assembly.to_netcdf(target_netcdf_file, mode=mode, group=group)
     sha1 = sha1_hash(target_netcdf_file)
     return sha1
 
@@ -233,7 +239,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
     if extras is not None:
         for k, ex in extras.items():
             assert isinstance(ex, DataArray)
-            netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group="group_"+ex.name)
+            netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group=k)
     upload_to_s3(target_netcdf_path, bucket_name, s3_key)
     lookup.append(
         catalog_identifier=catalog_identifier,
