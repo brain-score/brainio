@@ -13,7 +13,7 @@ class Catalog(DataFrame):
         return Catalog
 
     @classmethod
-    def from_file(cls, identifier, csv_path, url=None):
+    def from_files(cls, identifier, csv_path, url=None):
         loader = CatalogLoader(identifier, csv_path, cls=cls, url=url)
         return loader.load()
 

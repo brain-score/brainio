@@ -191,7 +191,7 @@ def my_project():
     path = Path(__file__).parent / "lookup.csv"
     _logger.debug(f"Loading lookup from {path}")
     print(f"Loading lookup from {path}")
-    catalog = Catalog.from_file("my_project", path)
+    catalog = Catalog.from_files("my_project", path)
     return catalog
 ```
 Now install your project in editable mode:  
