@@ -142,28 +142,17 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
 
 
 @pytest.mark.private_access
-def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file,
-                        make_stimulus_set_df, restore_catalog):
+def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
+                        make_stimulus_set_df, restore_catalog, make_meta_assembly, make_spk_assembly):
     stimulus_set = StimulusSet(make_stimulus_set_df)
     stimulus_set.image_paths = {row["image_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
     package_stimulus_set(test_catalog_identifier, stimulus_set, identifier, bucket_name="brainio-temp")
-    assy = DataAssembly(
-        data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
-        coords={
-            'image_id': ("presentation", ["n"+str(i) for i in range(6)]),
-            'image_type': ("presentation", ["foo"]*6),
-            'neuroid_id': ("neuroid", list("ABC")),
-            'neuroid_type': ("neuroid", ["bar"]*3),
-            'time_bin_start': ('time_bin', [0]),
-            'time_bin_end': ('time_bin', [10]),
-        },
-        dims=['presentation', 'neuroid', 'time_bin']
-    )
+    assy = make_spk_assembly
     identifier = "test.package_assembly_extras"
-    assy_extra = assy.copy()
+    assy_extra = make_meta_assembly
     assy_extra.name = "test"
     extras = {assy_extra.name: assy_extra}
     package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier,
@@ -172,7 +161,7 @@ def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, b
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
     assert gotten.attrs["test"] is not None
-    assert gotten.attrs["test"].shape == (6, 3, 1)
+    assert gotten.attrs["test"].shape == (40,)
 
 
 def test_compression(test_write_netcdf_path, make_spk_assembly):

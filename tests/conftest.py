@@ -64,27 +64,27 @@ def scattered_floats(lo, hi, num):
 @pytest.fixture
 def make_meta_assembly():
     coords = {
-        "stim_on_time_ms": ("presentation", [100]*40),
-        "stim_off_time_ms": ("presentation", [100]*40),
-        "stim_on_delay_ms": ("presentation", [300]*40),
-        "stimulus_size_degrees": ("presentation", [8]*40),
-        "fixation_window_size_degrees": ("presentation", [2]*40),
-        "fixation_point_size_degrees": ("presentation", [0.2]*40),
-        "stimulus_presented": ("presentation", list(range(5))*8),
-        "image_id": ("presentation", [f"n{x}" for x in list(range(5))*8]),
-        "fixation_correct": ("presentation", [1]*14+[0]+[1]*25),
-        "stimulus_order_in_trial": ("presentation", list(range(1, 6))*8),
-        "eye_h_degrees": ("presentation", [str(scattered_floats(-0.375, -0.275, 200))]*40),
-        "eye_v_degrees": ("presentation", [str(scattered_floats(0.121, 0.388, 200))]*40),
-        "eye_time_ms": ("presentation", [str(scattered_floats(-50, 150, 200))]*40),
-        "samp_on_us": ("presentation", scattered_floats(2_063_400, 18_820_950, 40)),
-        "photodiode_on_us": ("presentation", scattered_floats(2_088_100, 18_854_550, 40)),
+        "stim_on_time_ms": ("event", [100]*40),
+        "stim_off_time_ms": ("event", [100]*40),
+        "stim_on_delay_ms": ("event", [300]*40),
+        "stimulus_size_degrees": ("event", [8]*40),
+        "fixation_window_size_degrees": ("event", [2]*40),
+        "fixation_point_size_degrees": ("event", [0.2]*40),
+        "stimulus_presented": ("event", list(range(5))*8),
+        "image_id": ("event", [f"n{x}" for x in list(range(5))*8]),
+        "fixation_correct": ("event", [1]*14+[0]+[1]*25),
+        "stimulus_order_in_trial": ("event", list(range(1, 6))*8),
+        "eye_h_degrees": ("event", [str(scattered_floats(-0.375, -0.275, 200))]*40),
+        "eye_v_degrees": ("event", [str(scattered_floats(0.121, 0.388, 200))]*40),
+        "eye_time_ms": ("event", [str(scattered_floats(-50, 150, 200))]*40),
+        "samp_on_us": ("event", scattered_floats(2_063_400, 18_820_950, 40)),
+        "photodiode_on_us": ("event", scattered_floats(2_088_100, 18_854_550, 40)),
     }
     data = coords["photodiode_on_us"][1]
     a = MetadataAssembly(
         data=data,
         coords=coords,
-        dims=['presentation']
+        dims=['event']
     )
     return a
 

@@ -12,6 +12,7 @@ from PIL import Image
 
 import brainio.assemblies
 from brainio import lookup, list_stimulus_sets, fetch
+from brainio.fetch import resolve_assembly_class
 from brainio.lookup import TYPE_ASSEMBLY, TYPE_STIMULUS_SET, sha1_hash
 from xarray import DataArray
 
@@ -120,7 +121,7 @@ def check_experiment_stimulus_set(stimulus_set):
     check_image_numbers(stimulus_set)
 
 
-def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-contrib"):
+def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-temp"):
     """
     Package a set of images along with their metadata for the BrainIO system.
     :param catalog_name: The name of the lookup catalog to add the stimulus set to.
@@ -129,8 +130,7 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
         and columns for all stimulus-set-specific metadata but not the column 'filename'.
     :param stimulus_set_identifier: A unique name identifying the stimulus set
         <lab identifier>.<first author e.g. 'Rajalingham' or 'MajajHong' for shared first-author><YYYY year of publication>.
-    :param bucket_name: 'brainio.dicarlo' for DiCarlo Lab stimulus sets, 'brainio.contrib' for external stimulus sets,
-        'brainio.requested' for to-be-run-on-monkey-machine stimulus sets.
+    :param bucket_name: The name of the bucket to upload to.
     """
     _logger.debug(f"Packaging {stimulus_set_identifier}")
 
@@ -190,26 +190,18 @@ def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compres
     return sha1
 
 
-def verify_assembly(assembly, assembly_class):
-    if assembly_class not in ("PropertyAssembly", "SpikeTimesAssembly"):
-        assert 'presentation' in assembly.dims
-        if assembly_class.startswith('Neur'):  # neural/neuron assemblies need to follow this format
-            assert set(assembly.dims) == {'presentation', 'neuroid'} or \
-                   set(assembly.dims) == {'presentation', 'neuroid', 'time_bin'}
-
-
 def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
-                          assembly_class="NeuronRecordingAssembly", bucket_name="brainio-contrib", extras=None):
+                          assembly_class_name="NeuronRecordingAssembly", bucket_name="brainio-contrib", extras=None):
     """
     Package a set of data along with its metadata for the BrainIO system.
     :param catalog_identifier: The name of the lookup catalog to add the data assembly to.
     :param proto_data_assembly: An xarray DataArray containing experimental measurements and all related metadata.
-        * The dimensions of a neural DataArray must be
-            * presentation
-            * neuroid
-            * time_bin
-            A behavioral DataArray should also have a presentation dimension, but can be flexible about its other dimensions.
-        * The presentation dimension must have an image_id coordinate and should have coordinates for presentation-level metadata such as repetition and image_id.
+        * The dimensions of the DataArray must be appropriate for the DataAssembly class:
+            * NeuroidAssembly and its subclasses:  "presentation", "neuroid"[, "time_bin"]
+                * except for SpikeTimesAssembly:  "event"
+            * MetaDataAssembly:  "event"
+            * BehavioralAssembly:  should have a "presentation" dimension, but can be flexible about its other dimensions.
+        * A presentation dimension must have an image_id coordinate and should have coordinates for presentation-level metadata such as repetition.
           The presentation dimension should not have coordinates for image-specific metadata, these will be drawn from the StimulusSet based on image_id.
         * The neuroid dimension must have a neuroid_id coordinate and should have coordinates for as much neural metadata as possible (e.g. region, subregion, animal, row in array, column in array, etc.)
         * The time_bin dimension should have coordinates time_bin_start and time_bin_end.
@@ -217,14 +209,15 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
         * For published: <lab identifier>.<first author e.g. 'Rajalingham' or 'MajajHong' for shared first-author><YYYY year of publication>
         * For requests: <lab identifier>.<b for behavioral|n for neuroidal>.<m for monkey|h for human>.<proposer e.g. 'Margalit'>.<pull request number>
     :param stimulus_set_identifier: The unique name of an existing StimulusSet in the BrainIO system.
-    :param assembly_class: The name of a DataAssembly subclass.
-    :param bucket_name: 'brainio-dicarlo' for DiCarlo Lab assemblies, 'brainio-contrib' for external assemblies.
+    :param assembly_class_name: The name of a DataAssembly subclass.
+    :param bucket_name: The name of the bucket to upload to.
     """
     _logger.debug(f"Packaging {assembly_identifier}")
 
     # verify
-    verify_assembly(proto_data_assembly, assembly_class=assembly_class)
-    assert hasattr(brainio.assemblies, assembly_class)
+    assembly_class = resolve_assembly_class(assembly_class_name)
+    assembly = assembly_class(proto_data_assembly)
+    assembly.validate()
     assert stimulus_set_identifier in list_stimulus_sets(), \
         f"StimulusSet {stimulus_set_identifier} not found in packaged stimulus sets"
 
@@ -235,7 +228,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
     s3_key = netcdf_file_name
 
     # execute
-    netcdf_kf_sha1 = write_netcdf(proto_data_assembly, target_netcdf_path)
+    netcdf_kf_sha1 = write_netcdf(assembly, target_netcdf_path)
     if extras is not None:
         for k, ex in extras.items():
             assert isinstance(ex, DataArray)
@@ -246,6 +239,6 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
         object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
         lookup_type=TYPE_ASSEMBLY,
         bucket_name=bucket_name, sha1=netcdf_kf_sha1,
-        s3_key=s3_key, cls=assembly_class
+        s3_key=s3_key, cls=assembly_class_name
     )
     _logger.debug(f"assembly {assembly_identifier} packaged")

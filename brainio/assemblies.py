@@ -62,6 +62,9 @@ class DataAssembly(DataArray):
         )
         return loader.load()
 
+    def validate(self):
+        pass
+
     def multi_groupby(self, group_coord_names, *args, **kwargs):
         if len(group_coord_names) < 2:
             return self.groupby(group_coord_names[0], *args, **kwargs)
@@ -226,6 +229,10 @@ class NeuroidAssembly(DataAssembly):
     or neuron analogues.  """
     __slots__ = ()
 
+    def validate(self):
+        assert set(self.dims) == {'presentation', 'neuroid'} or \
+               set(self.dims) == {'presentation', 'neuroid', 'time_bin'}
+
 
 class NeuronRecordingAssembly(NeuroidAssembly):
     """A NeuronRecordingAssembly is a NeuroidAssembly containing data recorded from neurons.  """
@@ -255,10 +262,18 @@ class SpikeTimesAssembly(NeuronRecordingAssembly):
     def get_loader_class(cls):
         return GroupAppendLoader
 
+    def validate(self):
+        assert set(self.dims) == {'event'}
+
 
 class MetadataAssembly(DataAssembly):
-    """A SpikeTimesAssembly is a DataAssembly containing a one-dimensional array of neural spike event timestamps.  """
+    """A MetadataAssembly is a DataAssembly containing metadata, pertaining to another DataAssembly, that is best
+    described by a DataAssembly but has different dimensions from the DataAssembly it describes.  """
     __slots__ = ()
+
+    @classmethod
+    def get_loader_class(cls):
+        return StimulusReferenceLoader
 
 
 def coords_for_dim(xr_data, dim, exclude_indexes=True):
@@ -377,28 +392,35 @@ class AssemblyLoader:
             data_array = xr.open_dataarray(self.file_path)
         else:
             data_array = xr.open_dataarray(self.file_path, group=self.group)
-        result = data_array
-        result = self.assembly_class(data=result)
+        result = self.assembly_class(data=data_array)
         return result
 
 
-class StimulusMergeLoader(AssemblyLoader):
+class StimulusReferenceLoader(AssemblyLoader):
     """
-    Loads an assembly and add metadata from a stimulus set.
+    Loads an assembly and adds a pointer to a stimulus set.
     """
 
     def __init__(self, cls, file_path, stimulus_set_identifier=None, stimulus_set=None, **kwargs):
-        super(StimulusMergeLoader, self).__init__(cls, file_path, **kwargs)
+        super(StimulusReferenceLoader, self).__init__(cls, file_path, **kwargs)
         self.stimulus_set_identifier = stimulus_set_identifier
         self.stimulus_set = stimulus_set
 
     def load(self):
-        # data_array = xr.open_dataarray(self.file_path)
-        data_array = super(StimulusMergeLoader, self).load()
-        result = self.merge_stimulus_set_meta(data_array, self.stimulus_set)
-        result = self.assembly_class(data=result)
+        result = super(StimulusReferenceLoader, self).load()
         result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
         result.attrs["stimulus_set"] = self.stimulus_set
+        return result
+
+
+class StimulusMergeLoader(StimulusReferenceLoader):
+    """
+    Loads an assembly and merges in metadata from a stimulus set.
+    """
+
+    def load(self):
+        result = super(StimulusMergeLoader, self).load()
+        result = self.merge_stimulus_set_meta(result, self.stimulus_set)
         return result
 
     def merge_stimulus_set_meta(self, assy, stimulus_set):
@@ -409,14 +431,17 @@ class StimulusMergeLoader(AssemblyLoader):
         merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
         for col in stimulus_set.columns:
             assy[col] = (axis_name, merged[col])
+        assy = self.assembly_class(data=assy)
         return assy
 
 
-class GroupAppendLoader(StimulusMergeLoader):
+class GroupAppendLoader(StimulusReferenceLoader):
+    """
+    Loads an assembly plus any included metadata assemblies and a pointer to a stimulus set.
+    """
 
     def load(self):
-        data_array = xr.open_dataarray(self.file_path)
-        result = self.assembly_class(data=data_array)
+        result = super(GroupAppendLoader, self).load()
         nc = netCDF4.Dataset(self.file_path, "r")
         for group in nc.groups:
             try:
