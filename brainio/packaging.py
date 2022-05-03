@@ -6,6 +6,8 @@ import re
 import mimetypes
 
 import boto3
+import pandas as pd
+import xarray as xr
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
@@ -174,9 +176,14 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
 
 
 def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compress=True):
+    assembly = assembly.copy()
     target_netcdf_file = Path(target_netcdf_file)
     _logger.debug(f"Writing assembly to {target_netcdf_file}")
     assembly = assembly.reset_index(list(assembly.indexes))
+    for name in list(assembly.attrs):
+        attr = assembly.attrs[name]
+        if isinstance(attr, pd.DataFrame) or isinstance(attr, xr.DataArray):
+            del assembly.attrs[name]
     mode = "a" if append else "w"
     target_netcdf_file.parent.mkdir(parents=True, exist_ok=True)
     if compress:

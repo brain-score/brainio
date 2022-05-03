@@ -75,15 +75,141 @@ There are three main ways to use the Python BrainIO tools:
 * To add packages of stimuli and data to an existing catalog. 
 * To create a new project that provides a catalog.   
 
+## Opening Stimulus Sets And Data Assemblies From Files
+
+If you have a CSV file describing a BrainIO Stimulus Set and a directory containing the associated stimulus files, 
+you can load the `StimulusSet` into memory with `brainio.stimuli.StimulusSet.from_files()`.  
+An example of using BrainIO in a Python interactive interpreter session to load a `StimulusSet`:
+```pycon
+>>> from brainio.stimuli import StimulusSet
+>>> hvm_stim = StimulusSet.from_files('hvm-public/hvm-public.csv', 'hvm-public')
+>>> hvm_stim
+        id                             background_id  ...  ryz_semantic        rxz
+0        1  ecd40f3f6d7a4d6d88134d648884e0b9b364efc9  ...     -0.000000   0.000000
+1        2  006d66c207c6417574f62f0560c6b2b40a9ec5a1  ...     -0.000000   0.000000
+2        3  3b3c1d65865028d0fad0b0bf8f305098db717e7f  ...     -0.000000   0.000000
+3        4  687ade2f9ee4d52af9705865395471a24ba38d5f  ...     -0.000000   0.000000
+4        5  724e5703cc42aa2c3ff135e3508038a90e4ebcb3  ...     -0.000000   0.000000
+    ...                                       ...  ...           ...        ...
+3195  3196  70222407751181c4b7723cb09dbda63e7f9c7333  ...     17.585453 -12.905496
+3196  3197  f144e3aabccefb4228b8257506a2aa26ba5b4a6d  ...     22.244000  -6.302000
+3197  3198  9b87c8be1440ce9626bcfe656700ff3ac8f909fe  ...      9.423000 -13.140000
+3198  3199  c3edce2a8fce8c088605bd27fe1f2e7958939f54  ...     38.652000  11.926000
+3199  3200  91e68c65ff92e5a77f0fb13693bfe01bc429da18  ...     16.609000 -36.603000
+[3200 rows x 18 columns]
+>>> hvm_stim.get_image('8a72e2bfdb8c267b57232bf96f069374d5b21832')
+'hvm-public/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png'
+```
+
+If you have a netCDF file containing a BrainIO Data Assembly, you can open it with 
+`brainio.assemblies.<DataAssembly subclass>.from_files()`.  
+An example of using BrainIO in a Python interactive interpreter session to load a `DataAssembly`:
+
+```pycon
+>>> from brainio.assemblies import NeuronRecordingAssembly
+>>> hvm_assy = NeuronRecordingAssembly.from_files('MajajHong2015_public.nc', stimulus_set_identifier='dicarlo.hvm.public', stimulus_set=hvm_stim)
+>>> hvm_assy
+<xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 256, presentation: 148480, time_bin: 1)>
+array([[[ 0.06092933],
+        [-0.8479065 ],
+        [-1.618728  ],
+        ...,
+        [ 0.42337415],
+        [ 0.0775381 ],
+        [-0.614134  ]],
+       [[ 0.30726328],
+        [ 0.35321778],
+        [ 0.10181567],
+        ...,
+        [-2.2552547 ],
+        [ 1.0052351 ],
+        [-0.2989609 ]]], dtype=float32)
+Coordinates:
+  * neuroid          (neuroid) MultiIndex
+  - neuroid_id       (neuroid) object 'Chabo_L_M_5_9' ... 'Tito_L_M_8_0'
+  - arr              (neuroid) object 'M' 'M' 'M' 'M' 'M' ... 'M' 'M' 'M' 'M'
+  - col              (neuroid) int64 9 9 8 9 8 8 7 7 5 6 ... 1 0 1 0 1 0 0 1 1 0
+  - hemisphere       (neuroid) object 'L' 'L' 'L' 'L' 'L' ... 'L' 'L' 'L' 'L'
+  - subregion        (neuroid) object 'cIT' 'cIT' 'cIT' ... 'pIT' 'pIT' 'pIT'
+  - animal           (neuroid) object 'Chabo' 'Chabo' 'Chabo' ... 'Tito' 'Tito'
+  - y                (neuroid) float64 0.2 0.6 0.2 1.0 0.6 ... 1.0 1.0 1.8 1.4
+  - x                (neuroid) float64 1.8 1.8 1.4 1.8 ... -1.8 -1.4 -1.4 -1.8
+  - region           (neuroid) object 'IT' 'IT' 'IT' 'IT' ... 'IT' 'IT' 'IT'
+  - row              (neuroid) int64 5 6 5 7 6 7 9 7 9 8 ... 4 4 5 5 6 6 7 7 9 8
+  * presentation     (presentation) MultiIndex
+  - image_id         (presentation) object '8a72e2bfdb8c267b57232bf96f069374d...
+  - repetition       (presentation) int64 0 18 18 18 18 18 ... 16 16 16 17 17 17
+  - stimulus         (presentation) int64 0 426 427 428 429 ... 2569 2566 0 1 2
+...
+  - object_name      (presentation) object 'car_astra' 'face0' ... 'apple'
+  - variation        (presentation) int64 0 0 0 0 0 0 0 0 0 ... 3 3 3 3 3 3 3 3
+  - size             (presentation) float64 256.0 256.0 256.0 ... 256.0 256.0
+  - rxy_semantic     (presentation) float64 90.0 -0.0 -0.0 ... 0.02724 -10.4
+  - ryz_semantic     (presentation) float64 -0.0 -0.0 -0.0 ... -16.89 -0.2055
+  - rxz              (presentation) float64 0.0 0.0 0.0 ... 13.22 -2.621 -14.72
+  * time_bin         (time_bin) MultiIndex
+  - time_bin_start   (time_bin) int64 70
+  - time_bin_end     (time_bin) int64 170
+Attributes:
+    stimulus_set_identifier:  dicarlo.hvm.public
+    stimulus_set:                     id                             backgrou...
+```
+
+You can also write a Data Assembly to a netCDF file with `brainio.packaging.write_netcdf()`.  
+`write_netcdf` returns the new file's SHA-1 hash.  
+
+```pycon
+>>> from brainio.packaging import write_netcdf
+>>> hvm_assy_new = hvm_assy.sel(subregion='aIT', object_name='apple')
+>>> hvm_assy_new
+<xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 17, presentation: 2320, time_bin: 1)>
+array([[[-0.64983755],
+        [-1.058876  ],
+        [ 1.3953547 ],
+        ...,
+        [-0.21288353],
+        [ 1.6455535 ],
+        [ 3.1486752 ]],
+       [[-0.5977455 ],
+        [ 2.806696  ],
+        [ 0.25336486],
+        ...,
+        [ 0.6877102 ],
+        [ 0.683575  ],
+        [ 2.6989598 ]]], dtype=float32)
+Coordinates:
+  * neuroid          (neuroid) MultiIndex
+  - neuroid_id       (neuroid) object 'Chabo_L_A_8_8' ... 'Chabo_L_A_6_5'
+  - arr              (neuroid) object 'A' 'A' 'A' 'A' 'A' ... 'A' 'A' 'A' 'A'
+  - col              (neuroid) int64 8 8 6 7 5 7 7 6 6 5 6 5 5 5 6 5 5
+  - hemisphere       (neuroid) object 'L' 'L' 'L' 'L' 'L' ... 'L' 'L' 'L' 'L'
+  - animal           (neuroid) object 'Chabo' 'Chabo' ... 'Chabo' 'Chabo'
+  - y                (neuroid) float64 1.4 1.8 0.6 1.4 1.0 ... -0.2 -0.2 0.2 0.6
+  - x                (neuroid) float64 1.4 1.4 0.6 1.0 0.2 ... 0.2 0.6 0.2 0.2
+  - region           (neuroid) object 'IT' 'IT' 'IT' 'IT' ... 'IT' 'IT' 'IT'
+  - row              (neuroid) int64 8 9 6 8 7 9 7 9 7 9 8 8 3 4 4 5 6
+  * presentation     (presentation) MultiIndex
+  - image_id         (presentation) object '5cde85cc63e677623c606ebf6d21a6b02...
+  - repetition       (presentation) int64 18 18 18 18 19 19 ... 17 16 16 17 17
+  - stimulus         (presentation) int64 431 310 344 530 60 ... 2551 2544 5 2
+...
+  - ryz_semantic     (presentation) float64 -0.0 -0.0 -0.0 ... 42.79 -0.2055
+  - rxz              (presentation) float64 0.0 0.0 0.0 ... -23.87 -3.039 -14.72
+  * time_bin         (time_bin) MultiIndex
+  - time_bin_start   (time_bin) int64 70
+  - time_bin_end     (time_bin) int64 170
+Attributes:
+    stimulus_set_identifier:  dicarlo.hvm.public
+    stimulus_set:                     id                             backgrou...
+>>> write_netcdf(hvm_assy_new, 'hvm_aIT_apple.nc')
+'7da262e1d35de5fc26bbbe9b10c481792cef1bde'
+```
+
 ## Using Packaged Stimulus Sets And Data Assemblies
 
-Here we provide an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_image`:
+Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_image`:
 
-```shell
-(my-project) $ python
-Python 3.8.0 (default, Nov  6 2019, 15:49:01)
-[Clang 4.0.1 (tags/RELEASE_401/final)] :: Anaconda, Inc. on darwin
-Type "help", "copyright", "credits" or "license" for more information.
+```pycon
 >>> from brainio import get_assembly, get_stimulus_set
 >>> hvm_stim = get_stimulus_set("dicarlo.hvm")
 >>> hvm_stim
