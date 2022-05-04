@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import zipfile
+from pathlib import Path
 
 import boto3
 from botocore import UNSIGNED
@@ -181,7 +182,7 @@ def get_stimulus_set(identifier):
     stimulus_set = loader.load()
     stimulus_set.identifier = identifier
     # ensure perfect overlap
-    stimuli_paths = [os.path.join(stimuli_directory, local_path) for local_path in os.listdir(stimuli_directory)
+    stimuli_paths = [Path(stimuli_directory) / local_path for local_path in os.listdir(stimuli_directory)
                      if not local_path.endswith('.zip') and not local_path.endswith('.csv')]
     assert set(stimulus_set.stimulus_paths.values()) == set(stimuli_paths), \
         "Inconsistency: unzipped stimuli paths do not match csv paths"
