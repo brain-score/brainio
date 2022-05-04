@@ -32,7 +32,8 @@ class DataAssembly(DataArray):
     """A DataAssembly represents a set of data a researcher wishes to work with for
     an analysis or benchmarking task.  """
 
-    __slots__ = ()
+    __slots__ = ('get_loader_class', 'from_files', 'validate', 'multi_groupby', '_join_group_coords',
+                 '_dim_of_group_coords', 'multi_dim_apply', 'multisel')
 
     def __init__(self, *args, **kwargs):
         if is_fastpath(*args, **kwargs):
@@ -379,7 +380,7 @@ def get_levels(assembly):
 
 class AssemblyLoader:
     """
-    Loads an assembly from a file.
+    Loads a DataAssembly from a file.
     """
 
     def __init__(self, cls, file_path, group=None, **kwargs):
@@ -388,10 +389,7 @@ class AssemblyLoader:
         self.group = group
 
     def load(self):
-        if self.group is None:
-            data_array = xr.open_dataarray(self.file_path)
-        else:
-            data_array = xr.open_dataarray(self.file_path, group=self.group)
+        data_array = xr.open_dataarray(self.file_path, group=self.group)
         result = self.assembly_class(data=data_array)
         return result
 

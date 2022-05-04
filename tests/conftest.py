@@ -17,14 +17,14 @@ def test_catalog_identifier():
 
 
 def get_nc_path(check=True):
-    p = Path(__file__).parent/'files/assy_test_TestMe.nc'
+    p = Path(__file__).parent / 'files/assy_test_TestMe.nc'
     if check:
         assert p.exists()
     return p
 
 
 def get_nc_extras_path(check=True):
-    p = Path(__file__).parent/'files/assy_test_package_assembly_extras.nc'
+    p = Path(__file__).parent / 'files/assy_test_package_assembly_extras.nc'
     if check:
         assert p.exists()
     return p
@@ -32,7 +32,7 @@ def get_nc_extras_path(check=True):
 
 @pytest.fixture
 def test_write_netcdf_path(tmp_path):
-    p = tmp_path/"test.nc"
+    p = tmp_path / "test.nc"
     return p
 
 

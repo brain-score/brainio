@@ -11,7 +11,6 @@ ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
 _catalogs = None
-_concat_catalogs = None
 
 _logger = logging.getLogger(__name__)
 
@@ -46,31 +45,32 @@ def get_catalogs():
 
 
 def combined_catalog():
-    global _concat_catalogs
-    if _concat_catalogs is None:
-        catalogs = get_catalogs()
-        for identifier, catalog in catalogs.items():
-            catalog[SOURCE_CATALOG] = identifier
-        _concat_catalogs = pd.concat(catalogs.values(), ignore_index=True)
-    return _concat_catalogs
+    catalogs = get_catalogs()
+    for identifier, catalog in catalogs.items():
+        catalog[SOURCE_CATALOG] = identifier
+    concat_catalogs = pd.concat(catalogs.values(), ignore_index=True)
+    return concat_catalogs
 
 
 def list_stimulus_sets():
-    stimuli_rows = combined_catalog()[combined_catalog()['lookup_type'] == TYPE_STIMULUS_SET]
+    combined = combined_catalog()
+    stimuli_rows = combined[combined['lookup_type'] == TYPE_STIMULUS_SET]
     return sorted(list(set(stimuli_rows['identifier'])))
 
 
 def list_assemblies():
-    assembly_rows = combined_catalog()[combined_catalog()['lookup_type'] == TYPE_ASSEMBLY]
+    combined = combined_catalog()
+    assembly_rows = combined[combined['lookup_type'] == TYPE_ASSEMBLY]
     return sorted(list(set(assembly_rows['identifier'])))
 
 
 def lookup_stimulus_set(identifier):
-    lookup = combined_catalog()[(combined_catalog()['identifier'] == identifier) & (combined_catalog()['lookup_type'] == TYPE_STIMULUS_SET)]
+    combined = combined_catalog()
+    lookup = combined[(combined['identifier'] == identifier) & (combined['lookup_type'] == TYPE_STIMULUS_SET)]
     if len(lookup) == 0:
-        raise StimulusSetLookupError(f"stimulus_set {identifier} not found")
+        raise StimulusSetLookupError(f"Stimulus set {identifier} not found")
     csv_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_csv_lookup, label="CSV")
-    zip_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_zip_lookup, label="zip")
+    zip_lookup = _lookup_stimulus_set_filtered(lookup, filter_func=_is_zip_lookup, label="ZIP")
     return csv_lookup, zip_lookup
 
 
@@ -93,7 +93,7 @@ def _lookup_stimulus_set_filtered(lookup, filter_func, label):
 def lookup_assembly(identifier):
     lookup = combined_catalog()[(combined_catalog()['identifier'] == identifier) & (combined_catalog()['lookup_type'] == TYPE_ASSEMBLY)]
     if len(lookup) == 0:
-        raise AssemblyLookupError(f"assembly {identifier} not found")
+        raise AssemblyLookupError(f"Data assembly {identifier} not found")
     cols = [n for n in lookup.columns if n != SOURCE_CATALOG]
     # if there are any groups of rows where every field except source is the same,
     # we only want one from each group

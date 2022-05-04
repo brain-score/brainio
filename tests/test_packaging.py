@@ -103,7 +103,7 @@ def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_fi
 def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file,
                               restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -117,7 +117,7 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
 def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
                                restore_this_file, restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -146,7 +146,7 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
 def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
                         restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)

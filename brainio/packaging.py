@@ -181,12 +181,24 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
 
 
 def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compress=True):
+    """
+    Write a DataAssembly object to a netCDF file.
+    :param assembly: The DataAssembly to write to the file.  DataAssembly or a subclass.
+    :param target_netcdf_file: The file to write to.  str or path-like.
+    :param append:  If true, add to an existing file instead of creating a new one.
+    :param group:  If provided, the name of the netCDF group to write to within the file.  Otherwise the root group is used.  str.
+    :param compress:  If true, write as compressed data.
+    :return:  The SHA-1 hash of the file.  str.
+    """
     assembly = assembly.copy()
     target_netcdf_file = Path(target_netcdf_file)
     _logger.debug(f"Writing assembly to {target_netcdf_file}")
+    # reset_index can be removed when xarray supports writing MultiIndex to netCDF.
     assembly = assembly.reset_index(list(assembly.indexes))
     for name in list(assembly.attrs):
         attr = assembly.attrs[name]
+        # We can't serialize complex objects to netCDF.
+        # The following matches the complex objects that we tend to add as attributes.
         if isinstance(attr, pd.DataFrame) or isinstance(attr, xr.DataArray):
             del assembly.attrs[name]
     mode = "a" if append else "w"
