@@ -32,8 +32,7 @@ class DataAssembly(DataArray):
     """A DataAssembly represents a set of data a researcher wishes to work with for
     an analysis or benchmarking task.  """
 
-    __slots__ = ('get_loader_class', 'from_files', 'validate', 'multi_groupby', '_join_group_coords',
-                 '_dim_of_group_coords', 'multi_dim_apply', 'multisel')
+    __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         if is_fastpath(*args, **kwargs):
