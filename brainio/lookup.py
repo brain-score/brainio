@@ -91,7 +91,8 @@ def _lookup_stimulus_set_filtered(lookup, filter_func, label):
 
 
 def lookup_assembly(identifier):
-    lookup = combined_catalog()[(combined_catalog()['identifier'] == identifier) & (combined_catalog()['lookup_type'] == TYPE_ASSEMBLY)]
+    combined = combined_catalog()
+    lookup = combined[(combined['identifier'] == identifier) & (combined['lookup_type'] == TYPE_ASSEMBLY)]
     if len(lookup) == 0:
         raise AssemblyLookupError(f"Data assembly {identifier} not found")
     cols = [n for n in lookup.columns if n != SOURCE_CATALOG]
