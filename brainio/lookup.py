@@ -10,7 +10,7 @@ from brainio.catalogs import Catalog, SOURCE_CATALOG
 ENTRYPOINT = "brainio_lookups"
 TYPE_ASSEMBLY = 'assembly'
 TYPE_STIMULUS_SET = 'stimulus_set'
-_catalogs = None
+_catalogs = {}
 
 _logger = logging.getLogger(__name__)
 
@@ -28,19 +28,17 @@ def _load_catalog(identifier, entry_point):
 
 def _load_installed_catalogs():
     installed_catalogs = entrypoints.get_group_named(ENTRYPOINT)
-    catalogs = {}
+    _logger.debug(f"Loading catalog from entrypoints")
+    print(f"Loading catalog from entrypoints")
     for k, v in installed_catalogs.items():
         catalog = _load_catalog(k, v)
-        catalogs[k] = catalog
-    return catalogs
+        _catalogs[k] = catalog
+    return _catalogs
 
 
 def get_catalogs():
-    global _catalogs
-    if _catalogs is None:
-        _logger.debug(f"Loading catalog from entrypoints")
-        print(f"Loading catalog from entrypoints")
-        _catalogs = _load_installed_catalogs()
+    if not _catalogs:
+        _load_installed_catalogs()
     return _catalogs
 
 
@@ -115,8 +113,6 @@ class AssemblyLookupError(KeyError):
 
 def append(catalog_identifier, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
-    global _catalogs
-    global _concat_catalogs
     catalogs = get_catalogs()
     catalog = catalogs[catalog_identifier]
     catalog_path = catalog.source_path
@@ -152,7 +148,6 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
     catalog = catalog.append(add_lookup)
     catalog.to_csv(catalog_path, index=False)
     _catalogs[catalog_identifier] = catalog
-    _concat_catalogs = None
     return catalog
 
 
