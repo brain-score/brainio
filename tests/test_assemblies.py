@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from brainio.stimuli import StimulusSet
-from tests.conftest import get_nc_extras_path
+from tests.conftest import get_nc_extras_path, get_nc_path, get_csv_path, get_dir_path
 from xarray import DataArray
 
 import brainio
@@ -409,9 +409,9 @@ def test_stimulus_set_from_assembly(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     stimulus_set = assy_hvm.attrs["stimulus_set"]
     assert stimulus_set.shape[0] == np.unique(assy_hvm["image_id"]).shape[0]
-    for image_id in stimulus_set['image_id']:
-        image_path = stimulus_set.get_image(image_id)
-        assert os.path.exists(image_path)
+    for stimulus_id in stimulus_set['image_id']:
+        stimulus_path = stimulus_set.get_stimulus(stimulus_id)
+        assert os.path.exists(stimulus_path)
 
 
 def test_inplace():
@@ -432,15 +432,15 @@ def test_synthetic(assembly, shape, nans, brainio_home_session):
 
 
 class TestFromFiles:
-    def test_from_files(self, test_stimulus_set_identifier, get_nc_path, get_csv_path, get_dir_path):
-        p = get_nc_path
-        s = StimulusSet.from_files(get_csv_path, get_dir_path)
+    def test_from_files(self, test_stimulus_set_identifier):
+        p = get_nc_path()
+        s = StimulusSet.from_files(get_csv_path(), get_dir_path())
         a = DataAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
         assert a.shape == (6, 3)
 
-    def test_load_extras(self, test_stimulus_set_identifier, get_csv_path, get_dir_path):
+    def test_load_extras(self, test_stimulus_set_identifier):
         p = get_nc_extras_path()
-        s = StimulusSet.from_files(get_csv_path, get_dir_path)
+        s = StimulusSet.from_files(get_csv_path(), get_dir_path())
         a = SpikeTimesAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
         assert isinstance(a, SpikeTimesAssembly)
         assert a.shape == (1000,)

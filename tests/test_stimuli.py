@@ -7,24 +7,25 @@ import pytest
 
 import brainio
 from brainio.stimuli import StimulusSet
+from tests.conftest import get_csv_path, get_dir_path
 
 
 class TestPreservation:
     def test_subselection(self):
-        stimulus_set = StimulusSet([{'image_id': i} for i in range(100)])
-        stimulus_set.image_paths = {i: f'/dummy/path/{i}' for i in range(100)}
-        stimulus_set = stimulus_set[stimulus_set['image_id'].isin(stimulus_set['image_id'].values[:3])]
-        assert stimulus_set.get_image(0) is not None
+        stimulus_set = StimulusSet([{'stimulus_id': i} for i in range(100)])
+        stimulus_set.stimulus_paths = {i: f'/dummy/path/{i}' for i in range(100)}
+        stimulus_set = stimulus_set[stimulus_set['stimulus_id'].isin(stimulus_set['stimulus_id'].values[:3])]
+        assert stimulus_set.get_stimulus(0) is not None
 
     def test_pd_concat(self):
-        s1 = StimulusSet([{'image_id': i} for i in range(10)])
-        s1.image_paths = {i: f'/dummy/path/{i}' for i in range(10)}
-        s2 = StimulusSet([{'image_id': i} for i in range(10, 20)])
-        s2.image_paths = {i: f'/dummy/path/{i}' for i in range(10, 20)}
+        s1 = StimulusSet([{'stimulus_id': i} for i in range(10)])
+        s1.stimulus_paths = {i: f'/dummy/path/{i}' for i in range(10)}
+        s2 = StimulusSet([{'stimulus_id': i} for i in range(10, 20)])
+        s2.stimulus_paths = {i: f'/dummy/path/{i}' for i in range(10, 20)}
         s = pd.concat((s1, s2))
-        s.image_paths = {**s1.image_paths, **s2.image_paths}
-        assert s.get_image(1) is not None
-        assert s.get_image(11) is not None
+        s.stimulus_paths = {**s1.stimulus_paths, **s2.stimulus_paths}
+        assert s.get_stimulus(1) is not None
+        assert s.get_stimulus(11) is not None
 
 
 def test_get_stimulus_set(brainio_home):
@@ -36,10 +37,10 @@ def test_get_stimulus_set(brainio_home):
                                                  'rxy', 'rxy_semantic', 'rxz_semantic'})
     assert len(stimulus_set) == 3200
     assert stimulus_set.identifier == 'dicarlo.hvm-public'
-    for image_id in stimulus_set['image_id']:
-        image_path = stimulus_set.get_image(image_id)
-        assert os.path.exists(image_path)
-        extension = os.path.splitext(image_path)[1]
+    for stimulus_id in stimulus_set['image_id']:
+        stimulus_path = stimulus_set.get_stimulus(stimulus_id)
+        assert os.path.exists(stimulus_path)
+        extension = os.path.splitext(stimulus_path)[1]
         assert extension in ['.png', '.PNG', '.jpg', '.jpeg', '.JPG', '.JPEG']
 
 
@@ -50,7 +51,7 @@ def test_loadname_dicarlo_hvm(brainio_home_session):
 class TestLoadImage:
     def test_dicarlohvm(self, brainio_home_session):
         stimulus_set = brainio.get_stimulus_set(identifier="dicarlo.hvm-public")
-        paths = stimulus_set.image_paths.values()
+        paths = stimulus_set.stimulus_paths.values()
         for path in paths:
             image = imageio.imread(path)
             assert isinstance(image, np.ndarray)
@@ -69,13 +70,13 @@ def test_existence(stimulus_set_identifier, brainio_home_session):
     assert brainio.get_stimulus_set(stimulus_set_identifier) is not None
 
 
-def test_from_files(get_csv_path, get_dir_path):
-    s = brainio.stimuli.StimulusSet.from_files(get_csv_path, get_dir_path)
-    assert "image_id" in s.columns
+def test_from_files():
+    s = brainio.stimuli.StimulusSet.from_files(get_csv_path(), get_dir_path())
+    assert "stimulus_id" in s.columns
     return s
 
 
 class TestFromFiles:
-    def test_basic(self, get_csv_path, get_dir_path):
-        test_from_files(get_csv_path, get_dir_path)
+    def test_basic(self):
+        test_from_files()
 

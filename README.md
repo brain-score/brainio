@@ -27,7 +27,7 @@ We define these terms below.  For other terms, see the [glossary](docs/glossary.
 A **Stimulus Set** is a collection of stimuli intended for use in experiments, packaged so that it is organized and easy to obtain.  The parts of a Stimulus Set are:
 * a CSV file of metadata
 * a ZIP file of stimuli
-* a few [rules](docs/SPECIFICATION.md) for how the metadata are organized (like, include a column called "image_id")
+* a few [rules](docs/SPECIFICATION.md) for how the metadata are organized (like, include a column called "stimulus_id")
 
 A **Data Assembly** is a coherent body of data collected during an experiment, packaged with the metadata which describe it.  The term "assembly" is used in engineering for a set of parts that have been assembled to form a coherent unit.  The parts of a Data Assembly are:
 * a [netCDF-4](https://www.unidata.ucar.edu/software/netcdf/) file (internally an [HDF5](https://www.hdfgroup.org/solutions/hdf5/) file) containing numeric data and metadata
@@ -70,8 +70,9 @@ source for the project.  Packaging and cataloging are covered below.
 
 # Using The BrainIO Python Tools
 
-There are three main ways to use the Python BrainIO tools:
-* To access and analyze stimuli and data that are already packaged and cataloged.
+There are four main ways to use the Python BrainIO tools:
+* To access and analyze stimuli and data stored in files conforming to the [BrainIO Format Specification](docs/SPECIFICATION.md)
+* To look up and fetch stimuli and data that are packaged and cataloged.
 * To add packages of stimuli and data to an existing catalog. 
 * To create a new project that provides a catalog.   
 
@@ -82,7 +83,7 @@ you can load the `StimulusSet` into memory with `brainio.stimuli.StimulusSet.fro
 An example of using BrainIO in a Python interactive interpreter session to load a `StimulusSet`:
 ```pycon
 >>> from brainio.stimuli import StimulusSet
->>> hvm_stim = StimulusSet.from_files('hvm-public/hvm-public.csv', 'hvm-public')
+>>> hvm_stim = StimulusSet.from_files(csv_path='hvm-public/hvm-public.csv', dir_path='hvm-public')
 >>> hvm_stim
         id                             background_id  ...  ryz_semantic        rxz
 0        1  ecd40f3f6d7a4d6d88134d648884e0b9b364efc9  ...     -0.000000   0.000000
@@ -97,7 +98,7 @@ An example of using BrainIO in a Python interactive interpreter session to load 
 3198  3199  c3edce2a8fce8c088605bd27fe1f2e7958939f54  ...     38.652000  11.926000
 3199  3200  91e68c65ff92e5a77f0fb13693bfe01bc429da18  ...     16.609000 -36.603000
 [3200 rows x 18 columns]
->>> hvm_stim.get_image('8a72e2bfdb8c267b57232bf96f069374d5b21832')
+>>> hvm_stim.get_stimulus('8a72e2bfdb8c267b57232bf96f069374d5b21832')
 'hvm-public/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png'
 ```
 
@@ -107,7 +108,7 @@ An example of using BrainIO in a Python interactive interpreter session to load 
 
 ```pycon
 >>> from brainio.assemblies import NeuronRecordingAssembly
->>> hvm_assy = NeuronRecordingAssembly.from_files('MajajHong2015_public.nc', stimulus_set_identifier='dicarlo.hvm.public', stimulus_set=hvm_stim)
+>>> hvm_assy = NeuronRecordingAssembly.from_files(file_path='MajajHong2015_public.nc', stimulus_set_identifier='dicarlo.hvm.public', stimulus_set=hvm_stim)
 >>> hvm_assy
 <xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 256, presentation: 148480, time_bin: 1)>
 array([[[ 0.06092933],
@@ -137,7 +138,7 @@ Coordinates:
   - region           (neuroid) object 'IT' 'IT' 'IT' 'IT' ... 'IT' 'IT' 'IT'
   - row              (neuroid) int64 5 6 5 7 6 7 9 7 9 8 ... 4 4 5 5 6 6 7 7 9 8
   * presentation     (presentation) MultiIndex
-  - image_id         (presentation) object '8a72e2bfdb8c267b57232bf96f069374d...
+  - stimulus_id         (presentation) object '8a72e2bfdb8c267b57232bf96f069374d...
   - repetition       (presentation) int64 0 18 18 18 18 18 ... 16 16 16 17 17 17
   - stimulus         (presentation) int64 0 426 427 428 429 ... 2569 2566 0 1 2
 ...
@@ -189,7 +190,7 @@ Coordinates:
   - region           (neuroid) object 'IT' 'IT' 'IT' 'IT' ... 'IT' 'IT' 'IT'
   - row              (neuroid) int64 8 9 6 8 7 9 7 9 7 9 8 8 3 4 4 5 6
   * presentation     (presentation) MultiIndex
-  - image_id         (presentation) object '5cde85cc63e677623c606ebf6d21a6b02...
+  - stimulus_id         (presentation) object '5cde85cc63e677623c606ebf6d21a6b02...
   - repetition       (presentation) int64 18 18 18 18 19 19 ... 17 16 16 17 17
   - stimulus         (presentation) int64 431 310 344 530 60 ... 2551 2544 5 2
 ...
@@ -201,17 +202,17 @@ Coordinates:
 Attributes:
     stimulus_set_identifier:  dicarlo.hvm.public
     stimulus_set:                     id                             backgrou...
->>> write_netcdf(hvm_assy_new, 'hvm_aIT_apple.nc')
+>>> write_netcdf(assembly=hvm_assy_new, target_netcdf_file='hvm_aIT_apple.nc')
 '7da262e1d35de5fc26bbbe9b10c481792cef1bde'
 ```
 
-## Using Packaged Stimulus Sets And Data Assemblies
+## Using Packaged and Cataloged Stimulus Sets And Data Assemblies
 
-Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_image`:
+Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_stimulus`:
 
 ```pycon
 >>> from brainio import get_assembly, get_stimulus_set
->>> hvm_stim = get_stimulus_set("dicarlo.hvm")
+>>> hvm_stim = get_stimulus_set(identifier="dicarlo.hvm")
 >>> hvm_stim
         id                             background_id         s  ... rxy_semantic ryz_semantic        rxz
 0        1  ecd40f3f6d7a4d6d88134d648884e0b9b364efc9  1.000000  ...    90.000000    -0.000000   0.000000
@@ -221,7 +222,7 @@ Here's an example of using BrainIO in a Python interactive interpreter session, 
 5759  5760  a7fc954d2bd08fc2c4d3ade347f41a03a5850131  1.050000  ...   -67.467580     7.598457 -25.152591
 
 [5760 rows x 18 columns]
->>> hvm_assy = get_assembly("dicarlo.MajajHong2015.public")
+>>> hvm_assy = get_assembly(identifier="dicarlo.MajajHong2015.public")
 >>> hvm_assy
 <xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 256, presentation: 148480, time_bin: 1)>
 array([[[ 0.06092933],
@@ -241,8 +242,8 @@ Attributes:
     stimulus_set:                     id                             backgrou...
     identifier:               dicarlo.MajajHong2015.public
 
->>> hvm_stim.get_image("ecd40f3f6d7a4d6d88134d648884e0b9b364efc9")
-"/Users/me/.brainio/image_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
+>>> hvm_stim.get_stimulus(stimulus_id="ecd40f3f6d7a4d6d88134d648884e0b9b364efc9")
+"/Users/me/.brainio/stimulus_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
 ```
 
 ## Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog
@@ -256,7 +257,7 @@ To package Stimulus Sets and Data Assemblies and add them to a BrainIO Catalog, 
 1.  `git checkout dicarlo.Me2025.public`
 1.  Write a script that packages your Stimulus Set and/or Data Assembly.  
 We'll call our example `brainio-dicarlo/packaging/scripts/me2025.py`.
-    * Examples can be found in the packaging directory:  `packaging/scripts/`.
+    * See the [documentation](docs/packaging.rst) for the packaging methods
     * The packaging scripts in a repository serve as a historical record.  The 
   interface to the BrainIO API may have changed since a given script was written.
   Notably, the `package_stimulus_set` and `package_data_assembly` functions now 

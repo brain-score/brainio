@@ -12,7 +12,7 @@ A **Stimulus Set** is a collection of files containing experimental stimuli pres
     * The CSV file must contain a **header row** providing a name for each column containing a metadata variable.  Column names may contain lowercase letters, numerals and underscores.  
     * Each row after the header row must contain the metadata describing **one stimulus**.  
     * It is not necessary that every file in the ZIP archive be included as a stimulus in the set.  
-    * The CSV file must contain a column named **`image_id`**.  Each row of the `image_id` column must contain an alphanumeric string which is unique within the Stimulus Set.  This string is the identifier for the stimulus which is described by the metadata in that row. 
+    * The CSV file must contain a column named **`stimulus_id`**.  Each row of the `stimulus_id` column must contain an alphanumeric string which is unique within the Stimulus Set.  This string is the identifier for the stimulus which is described by the metadata in that row. 
     * The CSV file must contain a column named **`filename`**.  The `filename` value for each metadata row is the name of the file in the ZIP archive (or full file path if the ZIP archive is organized in directories) which corresponds to the stimulus described by that row.  
     * The CSV file may contain zero or more columns containing **metadata** values pertaining to the stimuli described.  
 ## Data Assembly

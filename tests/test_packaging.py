@@ -7,9 +7,10 @@ from pandas import DataFrame
 
 from brainio.assemblies import DataAssembly, get_levels
 from brainio.stimuli import StimulusSet
-from brainio.packaging import write_netcdf, check_image_numbers, check_image_naming_convention, TYPE_ASSEMBLY, \
+from brainio.packaging import write_netcdf, check_stimulus_numbers, check_stimulus_naming_convention, TYPE_ASSEMBLY, \
     package_stimulus_set, package_data_assembly
 import brainio.lookup as lookup
+from tests.conftest import make_stimulus_set_df, make_spk_assembly, make_meta_assembly
 
 
 def test_write_netcdf(test_write_netcdf_path):
@@ -59,18 +60,18 @@ def test_reset_index_levels():
     assert get_levels(assy) == []
 
 
-def test_image_numbers():
-    stimulus_set = StimulusSet(DataFrame({'image_id': [0, 1]}))
+def test_stimulus_numbers():
+    stimulus_set = StimulusSet(DataFrame({'stimulus_id': [0, 1]}))
     filenames = ['Nat300_1.png', 'Nat300_2.png']
     assert len(stimulus_set) == len(filenames)
-    stimulus_set.image_paths = {stimulus_set.at[idx, 'image_id']: filenames[idx] for idx in range(len(stimulus_set))}
+    stimulus_set.stimulus_paths = {stimulus_set.at[idx, 'stimulus_id']: filenames[idx] for idx in range(len(stimulus_set))}
 
-    check_image_numbers(stimulus_set)
+    check_stimulus_numbers(stimulus_set)
 
 
-def test_image_naming_convention():
+def test_stimulus_naming_convention():
     for name in ['image_1.png', 'Nat300_100.png', '1.png']:
-        check_image_naming_convention(name)
+        check_stimulus_naming_convention(name)
 
 
 def test_list_catalogs(test_catalog_identifier):
@@ -99,10 +100,10 @@ def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_fi
 
 
 @pytest.mark.private_access
-def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, make_stimulus_set_df, brainio_home, restore_this_file,
+def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file,
                               restore_catalog):
-    stimulus_set = StimulusSet(make_stimulus_set_df)
-    stimulus_set.image_paths = {row["image_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set = StimulusSet(make_stimulus_set_df())
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -114,9 +115,9 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
 
 @pytest.mark.private_access
 def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
-                               restore_this_file, make_stimulus_set_df, restore_catalog):
-    stimulus_set = StimulusSet(make_stimulus_set_df)
-    stimulus_set.image_paths = {row["image_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+                               restore_this_file, restore_catalog):
+    stimulus_set = StimulusSet(make_stimulus_set_df())
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -124,8 +125,8 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     assy = DataAssembly(
         data=[[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]], [[10], [11], [12]], [[13], [14], [15]], [[16], [17], [18]]],
         coords={
-            'image_id': ("presentation", ["n"+str(i) for i in range(6)]),
-            'image_type': ("presentation", ["foo"]*6),
+            'stimulus_id': ("presentation", ["n"+str(i) for i in range(6)]),
+            'stimulus_type': ("presentation", ["foo"]*6),
             'neuroid_id': ("neuroid", list("ABC")),
             'neuroid_type': ("neuroid", ["bar"]*3),
             'time_bin_start': ('time_bin', [0]),
@@ -143,16 +144,16 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
 
 @pytest.mark.private_access
 def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
-                        make_stimulus_set_df, restore_catalog, make_meta_assembly, make_spk_assembly):
-    stimulus_set = StimulusSet(make_stimulus_set_df)
-    stimulus_set.image_paths = {row["image_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+                        restore_catalog):
+    stimulus_set = StimulusSet(make_stimulus_set_df())
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent/f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
     package_stimulus_set(test_catalog_identifier, stimulus_set, identifier, bucket_name="brainio-temp")
-    assy = make_spk_assembly
+    assy = make_spk_assembly()
     identifier = "test.package_assembly_extras"
-    assy_extra = make_meta_assembly
+    assy_extra = make_meta_assembly()
     assy_extra.name = "test"
     extras = {assy_extra.name: assy_extra}
     package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier,
@@ -164,10 +165,10 @@ def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, b
     assert gotten.attrs["test"].shape == (40,)
 
 
-def test_compression(test_write_netcdf_path, make_spk_assembly):
-    write_netcdf(make_spk_assembly, test_write_netcdf_path, compress=False)
+def test_compression(test_write_netcdf_path):
+    write_netcdf(make_spk_assembly(), test_write_netcdf_path, compress=False)
     uncompressed = test_write_netcdf_path.stat().st_size
-    write_netcdf(make_spk_assembly, test_write_netcdf_path, compress=True)
+    write_netcdf(make_spk_assembly(), test_write_netcdf_path, compress=True)
     compressed = test_write_netcdf_path.stat().st_size
     assert uncompressed > compressed
 

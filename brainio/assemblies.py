@@ -424,9 +424,11 @@ class StimulusMergeLoader(StimulusReferenceLoader):
         return result
 
     def merge_stimulus_set_meta(self, assy, stimulus_set):
-        axis_name, index_column = "presentation", "image_id"
+        axis_name, index_column = "presentation", "stimulus_id"
         assy = assy.reset_index(list(assy.indexes))
         df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
+        if 'stimulus_id' not in df_of_coords.columns:
+            index_column = 'image_id' # for legacy packages
         cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
         merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
         for col in stimulus_set.columns:

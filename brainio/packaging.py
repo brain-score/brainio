@@ -21,13 +21,13 @@ from xarray import DataArray
 _logger = logging.getLogger(__name__)
 
 
-def create_image_zip(proto_stimulus_set, target_zip_path):
+def create_stimulus_zip(proto_stimulus_set, target_zip_path):
     """
-    Create zip file for images in StimulusSet.
-    Files in the zip will follow a flat directory structure with each row's filename equal to the `image_id` by default,
-        or `image_path_within_store` if passed.
-    :param proto_stimulus_set: a `StimulusSet` with a `get_image: image_id -> local path` method, an `image_id` column,
-        and optionally an `image_path_within_store` column.
+    Create zip file for stimuli in StimulusSet.
+    Files in the zip will follow a flat directory structure with each row's filename equal to the `stimulus_id` by default,
+        or `stimulus_path_within_store` if passed.
+    :param proto_stimulus_set: a `StimulusSet` with a `get_stimulus: stimulus_id -> local path` method, a `stimulus_id` column,
+        and optionally a `stimulus_path_within_store` column.
     :param target_zip_path: path to write the zip file to
     :return: SHA1 hash of the zip file
     """
@@ -36,11 +36,11 @@ def create_image_zip(proto_stimulus_set, target_zip_path):
     arcnames = []
     with zipfile.ZipFile(target_zip_path, 'w') as target_zip:
         for _, row in proto_stimulus_set.iterrows():  # using iterrows instead of itertuples for very large StimulusSets
-            image_path = proto_stimulus_set.get_image(row['image_id'])
-            extension = os.path.splitext(image_path)[1]
-            arcname = row['image_path_within_store'] if hasattr(row, 'image_path_within_store') else row['image_id']
+            stimulus_path = proto_stimulus_set.get_stimulus(row['stimulus_id'])
+            extension = os.path.splitext(stimulus_path)[1]
+            arcname = row['stimulus_path_within_store'] if hasattr(row, 'stimulus_path_within_store') else row['stimulus_id']
             arcname = arcname + extension
-            target_zip.write(image_path, arcname=arcname)
+            target_zip.write(stimulus_path, arcname=arcname)
             arcnames.append(arcname)
     sha1 = sha1_hash(target_zip_path)
     return sha1, arcnames
@@ -60,12 +60,12 @@ def upload_to_s3(source_file_path, bucket_name, target_s3_key):
 
 
 def extract_specific(proto_stimulus_set):
-    general = ['image_current_local_file_path', 'image_path_within_store']
+    general = ['stimulus_current_local_file_path', 'stimulus_path_within_store']
     stimulus_set_specific_attributes = set(proto_stimulus_set.columns) - set(general)
     return list(stimulus_set_specific_attributes)
 
 
-def create_image_csv(proto_stimulus_set, target_path):
+def create_stimulus_csv(proto_stimulus_set, target_path):
     _logger.debug(f"Writing csv to {target_path}")
     specific_columns = extract_specific(proto_stimulus_set)
     specific_stimulus_set = proto_stimulus_set[specific_columns]
@@ -78,7 +78,7 @@ def check_naming_convention(name):
     assert re.match(r"[a-z]+\.[A-Z][a-zA-Z0-9]+", name)
 
 
-def check_image_naming_convention(name):
+def check_stimulus_naming_convention(name):
     assert re.match(r"[a-zA-Z0-9]+_?(?!0)\d+\.(?:jpg|jpeg|png|mp4)|(?!0)\d+\.(?:jpg|jpeg|png|mp4)", name)
 
 
@@ -91,44 +91,47 @@ def check_image_format(image, identifier):
     assert channels[image.mode] == image_shape[2], f"{identifier}: incorrect channels {image_shape[2]}"
 
 
-def check_image_numbers(stimulus_set):
-    image_numbers = [int(image_file_path[image_file_path.rfind('_') + 1:image_file_path.rfind('.')])
-                     for image_file_path in list(stimulus_set.image_paths.values())]
-    image_numbers.sort()
-    for i in range(len(image_numbers) - 1):
-        assert image_numbers[i] == image_numbers[i + 1] - 1, "StimulusSet files not sequentially numbered"
+def check_stimulus_numbers(stimulus_set):
+    stimulus_numbers = [int(stimulus_file_path[stimulus_file_path.rfind('_') + 1:stimulus_file_path.rfind('.')])
+                     for stimulus_file_path in list(stimulus_set.stimulus_paths.values())]
+    stimulus_numbers.sort()
+    for i in range(len(stimulus_numbers) - 1):
+        assert stimulus_numbers[i] == stimulus_numbers[i + 1] - 1, "StimulusSet files not sequentially numbered"
 
 
 def check_experiment_stimulus_set(stimulus_set):
     """
     Checks the stimulus set files are non-corrupt and named/numbered sequentially. This function should only be called
     on stimulus sets that are pushed to the `brainio.requested` bucket.
-    :param stimulus_set: A StimulusSet containing one row for each image, and the columns
-    {'image_id', ['image_path_within_store' (optional to structure zip directory layout)]}
+    :param stimulus_set: A StimulusSet containing one row for each stimulus, and the columns
+    {'stimulus_id', ['stimulus_path_within_store' (optional to structure zip directory layout)]}
     and columns for all stimulus-set-specific metadata but not the column 'filename'.
     """
-    assert len(stimulus_set['image_id']), "StimulusSet is empty"
-    file_paths = list(stimulus_set.image_paths.values())
+    col_name = 'stimulus_id'
+    if 'stimulus_id' not in stimulus_set.columns:
+        col_name = 'image_id' # for legacy packages
+    assert len(stimulus_set[col_name]), "StimulusSet is empty"
+    file_paths = list(stimulus_set.stimulus_paths.values())
 
     file_type_0 = mimetypes.guess_type(file_paths[0])[0]
 
     for file_path in file_paths:
-        check_image_naming_convention(file_path[file_path.rfind('/') + 1:])
+        check_stimulus_naming_convention(file_path[file_path.rfind('/') + 1:])
         assert os.path.isfile(file_path), f"{file_path} does not exist"
         assert file_type_0 == mimetypes.guess_type(file_path)[0], f"{file_path} is a different media type than other stimuli in the StimulusSet"
         if file_type_0.startswith('image'):
             image = Image.open(file_path)
             check_image_format(image, file_path)
 
-    check_image_numbers(stimulus_set)
+    check_stimulus_numbers(stimulus_set)
 
 
 def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifier, bucket_name="brainio-temp"):
     """
-    Package a set of images along with their metadata for the BrainIO system.
+    Package a set of stimuli along with their metadata for the BrainIO system.
     :param catalog_name: The name of the lookup catalog to add the stimulus set to.
-    :param proto_stimulus_set: A StimulusSet containing one row for each image,
-        and the columns {'image_id', ['image_path_within_store' (optional to structure zip directory layout)]}
+    :param proto_stimulus_set: A StimulusSet containing one row for each stimulus,
+        and the columns {'stimulus_id', ['stimulus_path_within_store' (optional to structure zip directory layout)]}
         and columns for all stimulus-set-specific metadata but not the column 'filename'.
     :param stimulus_set_identifier: A unique name identifying the stimulus set
         <lab identifier>.<first author e.g. 'Rajalingham' or 'MajajHong' for shared first-author><YYYY year of publication>.
@@ -136,24 +139,26 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     """
     _logger.debug(f"Packaging {stimulus_set_identifier}")
 
-    assert 'image_id' in proto_stimulus_set.columns, "StimulusSet needs to have an `image_id` column"
+    # for legacy packages
+    id_col_present = 'stimulus_id' in proto_stimulus_set.columns or 'image_id' in proto_stimulus_set.columns
+    assert id_col_present, "StimulusSet needs to have a `stimulus_id` column"
 
     if bucket_name == 'brainio.requested':
         check_experiment_stimulus_set(proto_stimulus_set)
 
     # naming
-    image_store_identifier = "image_" + stimulus_set_identifier.replace(".", "_")
+    stimulus_store_identifier = "stimulus_" + stimulus_set_identifier.replace(".", "_")
     # - csv
-    csv_file_name = image_store_identifier + ".csv"
-    target_csv_path = Path(fetch.get_local_data_path()) / image_store_identifier / csv_file_name
+    csv_file_name = stimulus_store_identifier + ".csv"
+    target_csv_path = Path(fetch.get_local_data_path()) / stimulus_store_identifier / csv_file_name
     # - zip
-    zip_file_name = image_store_identifier + ".zip"
-    target_zip_path = Path(fetch.get_local_data_path()) / image_store_identifier / zip_file_name
+    zip_file_name = stimulus_store_identifier + ".zip"
+    target_zip_path = Path(fetch.get_local_data_path()) / stimulus_store_identifier / zip_file_name
     # create csv and zip files
-    image_zip_sha1, zip_filenames = create_image_zip(proto_stimulus_set, str(target_zip_path))
+    stimulus_zip_sha1, zip_filenames = create_stimulus_zip(proto_stimulus_set, str(target_zip_path))
     assert 'filename' not in proto_stimulus_set.columns, "StimulusSet already has column 'filename'"
     proto_stimulus_set['filename'] = zip_filenames  # keep record of zip (or later local) filenames
-    csv_sha1 = create_image_csv(proto_stimulus_set, str(target_csv_path))
+    csv_sha1 = create_stimulus_csv(proto_stimulus_set, str(target_csv_path))
     # upload both to S3
     upload_to_s3(str(target_csv_path), bucket_name, target_s3_key=csv_file_name)
     upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
@@ -169,7 +174,7 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
         catalog_identifier=catalog_name,
         object_identifier=stimulus_set_identifier, cls=None,
         lookup_type=TYPE_STIMULUS_SET,
-        bucket_name=bucket_name, sha1=image_zip_sha1, s3_key=zip_file_name,
+        bucket_name=bucket_name, sha1=stimulus_zip_sha1, s3_key=zip_file_name,
         stimulus_set_identifier=None
     )
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
@@ -208,8 +213,8 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
                 * except for SpikeTimesAssembly:  "event"
             * MetaDataAssembly:  "event"
             * BehavioralAssembly:  should have a "presentation" dimension, but can be flexible about its other dimensions.
-        * A presentation dimension must have an image_id coordinate and should have coordinates for presentation-level metadata such as repetition.
-          The presentation dimension should not have coordinates for image-specific metadata, these will be drawn from the StimulusSet based on image_id.
+        * A presentation dimension must have a stimulus_id coordinate and should have coordinates for presentation-level metadata such as repetition.
+          The presentation dimension should not have coordinates for stimulus-specific metadata, these will be drawn from the StimulusSet based on stimulus_id.
         * The neuroid dimension must have a neuroid_id coordinate and should have coordinates for as much neural metadata as possible (e.g. region, subregion, animal, row in array, column in array, etc.)
         * The time_bin dimension should have coordinates time_bin_start and time_bin_end.
     :param assembly_identifier: A dot-separated string starting with a lab identifier.

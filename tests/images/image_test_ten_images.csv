@@ -1,4 +1,4 @@
-image_id,filename,thing
+stimulus_id,filename,thing
 n0,n0.png,foo0
 n1,n1.png,foo1
 n2,n2.png,foo2

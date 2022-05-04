@@ -16,7 +16,6 @@ def test_catalog_identifier():
     return "brainio_test"
 
 
-@pytest.fixture
 def get_nc_path(check=True):
     p = Path(__file__).parent/'files/assy_test_TestMe.nc'
     if check:
@@ -37,14 +36,13 @@ def test_write_netcdf_path(tmp_path):
     return p
 
 
-@pytest.fixture
 def make_proto_assembly():
     a = DataAssembly(
         data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
         coords={
             'neuroid_id': ("neuroid", ['alpha','beta', 'gamma']),
             'foo': ("neuroid", [1, 2, 5]),
-            'image_id': ('presentation', ['n0', 'n1', 'n1', 'n0', 'n4', 'n9']),
+            'stimulus_id': ('presentation', ['n0', 'n1', 'n1', 'n0', 'n4', 'n9']),
             'repetition': ('presentation', [1, 1, 2, 1, 1, 1]),
         },
         dims=['presentation', 'neuroid']
@@ -61,7 +59,6 @@ def scattered_floats(lo, hi, num):
 
 
 # taken from values in /braintree/data2/active/users/sachis/projects/oasis900/monkeys/oleo/mworksproc/oleo_oasis900_210216_113846_mwk.csv
-@pytest.fixture
 def make_meta_assembly():
     coords = {
         "stim_on_time_ms": ("event", [100]*40),
@@ -71,7 +68,7 @@ def make_meta_assembly():
         "fixation_window_size_degrees": ("event", [2]*40),
         "fixation_point_size_degrees": ("event", [0.2]*40),
         "stimulus_presented": ("event", list(range(5))*8),
-        "image_id": ("event", [f"n{x}" for x in list(range(5))*8]),
+        "stimulus_id": ("event", [f"n{x}" for x in list(range(5))*8]),
         "fixation_correct": ("event", [1]*14+[0]+[1]*25),
         "stimulus_order_in_trial": ("event", list(range(1, 6))*8),
         "eye_h_degrees": ("event", [str(scattered_floats(-0.375, -0.275, 200))]*40),
@@ -89,7 +86,6 @@ def make_meta_assembly():
     return a
 
 
-@pytest.fixture
 def make_spk_assembly():
     coords = {
         "neuroid_id": ("event", ["A-019", "D-009"]*500),
@@ -121,9 +117,9 @@ def make_nc():
     write_netcdf(a, p)
 
 
-def make_nc_extras(make_meta_assembly, make_spk_assembly):
-    a = make_spk_assembly
-    m = make_meta_assembly
+def make_nc_extras():
+    a = make_spk_assembly()
+    m = make_meta_assembly()
     p = get_nc_extras_path(check=False)
     write_netcdf(a, p)
     write_netcdf(m, p, append=True, group="test")
@@ -134,7 +130,6 @@ def test_stimulus_set_identifier():
     return "test.TenImages"
 
 
-@pytest.fixture
 def get_csv_path(check=True):
     p = Path(__file__).parent / 'images/image_test_ten_images.csv'
     if check:
@@ -142,7 +137,6 @@ def get_csv_path(check=True):
     return p
 
 
-@pytest.fixture
 def get_dir_path(check=True):
     p = Path(__file__).parent / 'images'
     if check:
@@ -152,9 +146,8 @@ def get_dir_path(check=True):
     return p
 
 
-@pytest.fixture
 def make_stimulus_set_df(check=True):
-    df = pd.DataFrame({'image_id': "n" + str(i), 'filename': f'n{i}.png', 'thing': f'foo{i}'} for i in range(10))
+    df = pd.DataFrame({'stimulus_id': "n" + str(i), 'filename': f'n{i}.png', 'thing': f'foo{i}'} for i in range(10))
     if check:
         assert len(df) == 10
         assert len(df.columns) == 3
