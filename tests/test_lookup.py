@@ -67,7 +67,7 @@ def test_lookup_bad_name():
 
 
 def test_catalogs():
-    cats = brainio.lookup.list_installed_catalogs()
+    cats = brainio.lookup.list_catalogs()
     assert len(cats) == 2
     assert "brainio_test" in cats
     assert "brainio_test2" in cats

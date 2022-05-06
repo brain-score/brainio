@@ -70,13 +70,31 @@ source for the project.  Packaging and cataloging are covered below.
 
 # Using The BrainIO Python Tools
 
+## Basic API
+
+The most commonly used methods of the BrainIO API are:  
+
+* **List Catalogs**: `brainio.list_catalogs()` lists the identifiers of all the BrainIO catalogs installed in your current Python environment.  
+* **List Stimulus Sets**:  `brainio.list_stimulus_sets()` lists the identifiers of all the BrainIO stimulus sets available via your installed catalogs.  
+* **List Data Assemblies**:  `brainio.list_assemblies()` lists the identifiers of all the BrainIO data assemblies available via your installed catalogs.  
+
+
+* **Stimulus Set From Files**:  `brainio.stimuli.StimulusSet.from_files(csv_path, dir_path)` loads into memory a stimulus set contained in the provided files.  
+* **Data Assembly From Files**:  `brainio.assemblies.DataAssembly.from_files(file_path, group=None, stimulus_set_identifier=None, stimulus_set=None, **kwargs)` loads into memory a data assembly contained in the provided file.  Usually called from a subclass of DataAssembly.  
+
+
+* **Get Stimulus Set**:  `brainio.get_stimulus_set(identifier)` looks up, fetches, loads and returns the stimulus set matching the given unique identifier.  
+* **Get Data Assembly**:  `brainio.get_assembly(identifier)` looks up, fetches, loads and returns the data assembly matching the given unique identifier (including getting any associated stimulus set).  
+
+## Types of Usage
+
 There are four main ways to use the Python BrainIO tools:
 * To access and analyze stimuli and data stored in files conforming to the [BrainIO Format Specification](docs/SPECIFICATION.md)
 * To look up and fetch stimuli and data that are packaged and cataloged.
 * To add packages of stimuli and data to an existing catalog. 
 * To create a new project that provides a catalog.   
 
-## Opening Stimulus Sets And Data Assemblies From Files
+### Opening Stimulus Sets And Data Assemblies From Files
 
 If you have a CSV file describing a BrainIO Stimulus Set and a directory containing the associated stimulus files, 
 you can load the `StimulusSet` into memory with `brainio.stimuli.StimulusSet.from_files()`.  
@@ -206,7 +224,7 @@ Attributes:
 '7da262e1d35de5fc26bbbe9b10c481792cef1bde'
 ```
 
-## Using Packaged and Cataloged Stimulus Sets And Data Assemblies
+### Using Packaged and Cataloged Stimulus Sets And Data Assemblies
 
 Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_stimulus`:
 
@@ -246,7 +264,7 @@ Attributes:
 "/Users/me/.brainio/stimulus_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
 ```
 
-## Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog
+### Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog
 
 To package Stimulus Sets and Data Assemblies and add them to a BrainIO Catalog, first install a project in editable mode as described above.  Make sure you have commit privileges on [GitHub](https://github.com/) for the repository you're editing.  Then (using the same [example project](https://github.com/dicarlolab/brainio-dicarlo) as above):  
 
@@ -278,7 +296,7 @@ changes and approves them, you can merge the pull request to `main`, and your
 packaged Stimulus Sets and Data Assemblies will be available to anyone who 
 installs the project.  
 
-## Creating A New Project That Provides A Catalog
+### Creating A New Project That Provides A Catalog
 
 ```shell
 mkdir -p ~/projects/my-project/my_project

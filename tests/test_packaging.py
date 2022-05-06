@@ -75,7 +75,7 @@ def test_stimulus_naming_convention():
 
 
 def test_list_catalogs(test_catalog_identifier):
-    catalog_names = lookup.list_installed_catalogs()
+    catalog_names = lookup.list_catalogs()
     assert test_catalog_identifier in catalog_names
 
 

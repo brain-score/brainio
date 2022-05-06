@@ -15,8 +15,8 @@ _catalogs = {}
 _logger = logging.getLogger(__name__)
 
 
-def list_installed_catalogs():
-    return list(entrypoints.get_group_named(ENTRYPOINT).keys())
+def list_catalogs():
+    return sorted(list(entrypoints.get_group_named(ENTRYPOINT).keys()))
 
 
 def _load_catalog(identifier, entry_point):
@@ -34,6 +34,11 @@ def _load_installed_catalogs():
         catalog = _load_catalog(k, v)
         _catalogs[k] = catalog
     return _catalogs
+
+
+def get_catalog(identifier):
+    catalogs = get_catalogs()
+    return catalogs[identifier]
 
 
 def get_catalogs():

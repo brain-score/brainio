@@ -50,7 +50,7 @@ class DataAssembly(DataArray):
 
     @classmethod
     def get_loader_class(cls):
-        return StimulusMergeLoader
+        return StimulusMergeAssemblyLoader
 
     @classmethod
     def from_files(cls, file_path, **kwargs):
@@ -260,7 +260,7 @@ class SpikeTimesAssembly(NeuronRecordingAssembly):
 
     @classmethod
     def get_loader_class(cls):
-        return GroupAppendLoader
+        return GroupAppendAssemblyLoader
 
     def validate(self):
         assert set(self.dims) == {'event'}
@@ -273,7 +273,7 @@ class MetadataAssembly(DataAssembly):
 
     @classmethod
     def get_loader_class(cls):
-        return StimulusReferenceLoader
+        return StimulusReferenceAssemblyLoader
 
 
 def coords_for_dim(xr_data, dim, exclude_indexes=True):
@@ -393,30 +393,30 @@ class AssemblyLoader:
         return result
 
 
-class StimulusReferenceLoader(AssemblyLoader):
+class StimulusReferenceAssemblyLoader(AssemblyLoader):
     """
     Loads an assembly and adds a pointer to a stimulus set.
     """
 
     def __init__(self, cls, file_path, stimulus_set_identifier=None, stimulus_set=None, **kwargs):
-        super(StimulusReferenceLoader, self).__init__(cls, file_path, **kwargs)
+        super(StimulusReferenceAssemblyLoader, self).__init__(cls, file_path, **kwargs)
         self.stimulus_set_identifier = stimulus_set_identifier
         self.stimulus_set = stimulus_set
 
     def load(self):
-        result = super(StimulusReferenceLoader, self).load()
+        result = super(StimulusReferenceAssemblyLoader, self).load()
         result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
         result.attrs["stimulus_set"] = self.stimulus_set
         return result
 
 
-class StimulusMergeLoader(StimulusReferenceLoader):
+class StimulusMergeAssemblyLoader(StimulusReferenceAssemblyLoader):
     """
     Loads an assembly and merges in metadata from a stimulus set.
     """
 
     def load(self):
-        result = super(StimulusMergeLoader, self).load()
+        result = super(StimulusMergeAssemblyLoader, self).load()
         result = self.merge_stimulus_set_meta(result, self.stimulus_set)
         return result
 
@@ -434,13 +434,13 @@ class StimulusMergeLoader(StimulusReferenceLoader):
         return assy
 
 
-class GroupAppendLoader(StimulusReferenceLoader):
+class GroupAppendAssemblyLoader(StimulusReferenceAssemblyLoader):
     """
     Loads an assembly plus any included metadata assemblies and a pointer to a stimulus set.
     """
 
     def load(self):
-        result = super(GroupAppendLoader, self).load()
+        result = super(GroupAppendAssemblyLoader, self).load()
         nc = netCDF4.Dataset(self.file_path, "r")
         for group in nc.groups:
             try:
