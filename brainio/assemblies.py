@@ -291,6 +291,9 @@ def gather_indexes(xr_data):
     coords_d = {}
     for dim in xr_data.dims:
         coords = coords_for_dim(xr_data, dim)
+        for k in list(coords.keys()):
+            if not pd.api.types.is_hashable(coords[k].values):
+                del coords[k]
         if coords:
             coords_d[dim] = list(coords.keys())
     if coords_d:
