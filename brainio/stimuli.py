@@ -45,13 +45,14 @@ class StimulusSetLoader:
 
     def load(self):
         stimulus_set = pd.read_csv(self.csv_path)
+        self.correct_stimulus_id_name(stimulus_set)
         stimulus_set = self.stimulus_set_class(stimulus_set)
-        stimulus_set.stimulus_paths = {}
-        for _, row in stimulus_set.iterrows():
-            col_name = 'stimulus_id'
-            if 'stimulus_id' not in row:
-                col_name = 'image_id' # for legacy packages
-            stimulus_set.stimulus_paths[row[col_name]] = Path(self.stimuli_directory) / row['filename']
+        stimulus_set.stimulus_paths = {row['stimulus_id']: Path(self.stimuli_directory) / row['filename']
+                                       for _, row in stimulus_set.iterrows()}
         assert all(stimulus_path.is_file() for stimulus_path in stimulus_set.stimulus_paths.values())
         return stimulus_set
+
+    def correct_stimulus_id_name(self, stimulus_set):
+        if 'image_id' in stimulus_set and 'stimulus_id' not in stimulus_set:
+            stimulus_set['stimulus_id'] = stimulus_set['image_id']
 

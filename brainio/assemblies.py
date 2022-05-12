@@ -389,8 +389,13 @@ class AssemblyLoader:
 
     def load(self):
         data_array = xr.open_dataarray(self.file_path, group=self.group)
+        self.correct_stimulus_id_name(data_array)
         result = self.assembly_class(data=data_array)
         return result
+
+    def correct_stimulus_id_name(self, data_array):
+        if 'image_id' in data_array and 'stimulus_id' not in data_array:
+            data_array['stimulus_id'] = data_array['image_id']
 
 
 class StimulusReferenceAssemblyLoader(AssemblyLoader):
