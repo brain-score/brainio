@@ -251,7 +251,7 @@ class PropertyAssembly(DataAssembly):
 
     @classmethod
     def get_loader_class(cls):
-        return AssemblyLoader
+        return StimulusReferenceAssemblyLoader
 
 
 class SpikeTimesAssembly(NeuronRecordingAssembly):
@@ -274,28 +274,6 @@ class MetadataAssembly(DataAssembly):
     @classmethod
     def get_loader_class(cls):
         return StimulusReferenceAssemblyLoader
-
-
-def coords_for_dim(xr_data, dim, exclude_indexes=True):
-    result = OrderedDict()
-    for key, value in xr_data.coords.variables.items():
-        only_this_dim = value.dims == (dim,)
-        exclude_because_index = exclude_indexes and isinstance(value, xr.IndexVariable)
-        if only_this_dim and not exclude_because_index:
-            result[key] = value
-    return result
-
-
-def gather_indexes(xr_data):
-    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
-    coords_d = {}
-    for dim in xr_data.dims:
-        coords = coords_for_dim(xr_data, dim)
-        if coords:
-            coords_d[dim] = list(coords.keys())
-    if coords_d:
-        xr_data = xr_data.set_index(append=True, **coords_d)
-    return xr_data
 
 
 class GroupbyBridge(object):
@@ -350,6 +328,45 @@ def array_is_element(arr, element):
     return len(arr) == 1 and arr[0] == element
 
 
+def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
+                 include_indexes=True, as_levels=True):
+    """
+    Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
+    """
+    def filter(name, dims, values, names_only):
+        if names_only:
+            return name
+        else:
+            return name, dims, values
+    if dims is None:
+        dims = assembly.dims
+    for name in assembly.coords.variables:
+        values = assembly.coords.variables[name]
+        if set(values.dims) <= set(dims):
+            is_index = isinstance(values, IndexVariable)
+            if is_index:
+                if  include_indexes:
+                    if as_levels and values.level_names:
+                        for level in values.level_names:
+                            level_values = assembly.coords[level]
+                            yield filter(level, level_values.dims, level_values.values, names_only)
+                    else:
+                        yield filter(name, values.dims, values.values, names_only)
+            else:
+                if include_coords:
+                    yield filter(name, values.dims, values.values, names_only)
+
+
+def coords_for_dim(xr_data, dim, exclude_indexes=True):
+    result = OrderedDict()
+    for key, value in xr_data.coords.variables.items():
+        only_this_dim = value.dims == (dim,)
+        exclude_because_index = exclude_indexes and isinstance(value, xr.IndexVariable)
+        if only_this_dim and not exclude_because_index:
+            result[key] = value
+    return result
+
+
 def walk_coords(assembly):
     """
     walks through coords and all levels, just like the `__repr__` function, yielding `(name, dims, values)`.
@@ -375,6 +392,18 @@ def get_levels(assembly):
             for level in value.level_names:
                 levels.append(level)
     return levels
+
+
+def gather_indexes(xr_data):
+    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
+    coords_d = {}
+    for dim in xr_data.dims:
+        coords = coords_for_dim(xr_data, dim)
+        if coords:
+            coords_d[dim] = list(coords.keys())
+    if coords_d:
+        xr_data = xr_data.set_index(append=True, **coords_d)
+    return xr_data
 
 
 class AssemblyLoader:

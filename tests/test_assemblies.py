@@ -5,14 +5,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from brainio.stimuli import StimulusSet
-from tests.conftest import get_nc_extras_path, get_nc_path, get_csv_path, get_dir_path
+from tests.conftest import get_nc_extras_path, get_nc_path, get_csv_path, get_dir_path, make_proto_assembly
 from xarray import DataArray
 
 import brainio
 from brainio import assemblies
 from brainio import fetch
 from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath, MetadataAssembly, \
-    SpikeTimesAssembly
+    SpikeTimesAssembly, get_metadata
 
 
 def test_get_levels():
@@ -450,5 +450,17 @@ class TestFromFiles:
         assert isinstance(extra, MetadataAssembly)
         assert "stimulus_set" in extra.attrs
         assert extra.shape == (40,)
+
+
+def test_get_metadata():
+    a = make_proto_assembly()
+    md_all = list(get_metadata(a))
+    assert len(md_all) == 4
+    md_coo = list(get_metadata(a, include_indexes=False))
+    assert len(md_coo) == 0
+    md_ind = list(get_metadata(a, include_coords=False, as_levels=False))
+    assert len(md_ind) == 2
+    md_lev = list(get_metadata(a, include_coords=False))
+    assert len(md_lev) == 4
 
 
