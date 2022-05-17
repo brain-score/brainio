@@ -52,7 +52,8 @@ class StimulusSetLoader:
         assert all(stimulus_path.is_file() for stimulus_path in stimulus_set.stimulus_paths.values())
         return stimulus_set
 
-    def correct_stimulus_id_name(self, stimulus_set):
+    @classmethod
+    def correct_stimulus_id_name(cls, stimulus_set):
         if 'image_id' in stimulus_set and 'stimulus_id' not in stimulus_set:
             stimulus_set['stimulus_id'] = stimulus_set['image_id']
 
