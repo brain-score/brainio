@@ -199,7 +199,7 @@ def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compres
         attr = assembly.attrs[name]
         # We can't serialize complex objects to netCDF.
         # The following matches the complex objects that we tend to add as attributes.
-        if isinstance(attr, pd.DataFrame) or isinstance(attr, xr.DataArray):
+        if isinstance(attr, pd.DataFrame) or isinstance(attr, xr.DataArray) or attr is None:
             del assembly.attrs[name]
     mode = "a" if append else "w"
     target_netcdf_file.parent.mkdir(parents=True, exist_ok=True)
@@ -215,7 +215,7 @@ def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compres
 
 
 def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_identifier, stimulus_set_identifier,
-                          assembly_class_name="NeuronRecordingAssembly", bucket_name="brainio-contrib", extras=None):
+                          assembly_class_name="NeuronRecordingAssembly", bucket_name="brainio-temp", extras=None):
     """
     Package a set of data along with its metadata for the BrainIO system.
     :param catalog_identifier: The name of the lookup catalog to add the data assembly to.
@@ -241,6 +241,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
     # verify
     assembly_class = resolve_assembly_class(assembly_class_name)
     assembly = assembly_class(proto_data_assembly)
+    assembly.attrs['stimulus_set_identifier'] = stimulus_set_identifier
     assembly.validate()
     assert stimulus_set_identifier in list_stimulus_sets(), \
         f"StimulusSet {stimulus_set_identifier} not found in packaged stimulus sets"

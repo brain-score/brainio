@@ -11,6 +11,10 @@ from brainio import lookup
 from brainio.assemblies import DataAssembly, SpikeTimesAssembly, MetadataAssembly
 from brainio.packaging import write_netcdf
 
+
+BUCKET_NAME = "brainio-temp"
+
+
 @pytest.fixture
 def test_catalog_identifier():
     return "brainio_test"

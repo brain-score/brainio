@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import brainio
+from conftest import BUCKET_NAME
 from pandas import DataFrame
 
 from brainio.assemblies import DataAssembly, get_levels
@@ -107,7 +108,7 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
-    package_stimulus_set(test_catalog_identifier, stimulus_set, identifier, bucket_name="brainio-temp")
+    package_stimulus_set(test_catalog_identifier, stimulus_set, identifier, bucket_name=BUCKET_NAME)
     assert identifier in lookup.list_stimulus_sets()
     gotten = brainio.get_stimulus_set(identifier)
     assert gotten is not None
