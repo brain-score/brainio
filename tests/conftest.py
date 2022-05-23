@@ -178,34 +178,52 @@ def files_to_remove():
 
 @pytest.fixture
 def restore_this_file():
-    now = datetime.now()
-    paths = {}
+    fixture_start = datetime.now()
+    backup_paths = {}
     def f(path):
         path = Path(path)
-        assert path.exists()
-        assert path.is_file()
-        tmp = path.with_suffix(path.suffix + ".bak")
-        paths[path] = tmp
-        shutil.copy2(str(path), str(tmp))
+        if path.is_file():
+            tmp = path.with_suffix(path.suffix + ".bak")
+            backup_paths[str(path)] = tmp
+            shutil.copy2(path, tmp)
+        else:
+            backup_paths[str(path)] = None
     yield f
-    for path in paths:
-        mtime = datetime.fromtimestamp(path.stat().st_mtime_ns * 1e-9)
-        if path.exists() and mtime > now:
-            path.unlink()
-            shutil.move(paths[path], path)
+    for path in backup_paths:
+        backup_path = backup_paths[path]
+        path = Path(path)
+        if path.exists():
+            if backup_path is None:
+                path.unlink()
+            else:
+                mtime = datetime.fromtimestamp(path.stat().st_mtime_ns * 1e-9)
+                if mtime > fixture_start:
+                    path.unlink()
+                    shutil.move(backup_path, path)
+                else:
+                    backup_path.unlink()
+        elif backup_path:
+            shutil.move(backup_path, path)
 
 
 @pytest.fixture
 def restore_catalog(restore_this_file):
-    catalogs = {}
-    def f(catalog_identifier):
-        catalog = lookup.get_catalogs()[catalog_identifier]
-        restore_this_file(catalog.source_path)
-        catalogs[catalog_identifier] = catalog
+    original_catalogs = {}
+    tmp_paths = {}
+    def f(catalog_identifier, tmp_path=None):
+        original_catalog = lookup.get_catalogs()[catalog_identifier]
+        restore_this_file(original_catalog.source_path)
+        original_catalogs[catalog_identifier] = original_catalog
+        tmp_paths[catalog_identifier] = tmp_path
     yield f
-    main_catalogs = lookup.get_catalogs()
-    for identifier, catalog in catalogs.items():
-        main_catalogs[identifier] = catalog
+    current_catalogs = lookup.get_catalogs()
+    for identifier, original_catalog in original_catalogs.items():
+        tmp_path = tmp_paths[identifier]
+        if tmp_path:
+            current_path = current_catalogs[identifier].source_path
+            target_path = tmp_path / current_path.name
+            shutil.copy(current_path, target_path)
+        current_catalogs[identifier] = original_catalog
 
 
 @pytest.fixture
