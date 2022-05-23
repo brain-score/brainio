@@ -1,3 +1,3 @@
 from .fetch import get_assembly, get_stimulus_set
-from .lookup import list_stimulus_sets
-from .lookup import list_assemblies
+from .lookup import get_catalog, list_stimulus_sets, list_assemblies, list_catalogs
+

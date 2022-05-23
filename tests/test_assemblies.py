@@ -1,18 +1,18 @@
 import os
-from pathlib import Path
 
 import pytest
-from pytest import approx
 import numpy as np
 import pandas as pd
 import xarray as xr
+from brainio.stimuli import StimulusSet
+from tests.conftest import get_nc_extras_path, get_nc_path, get_csv_path, get_dir_path, make_proto_assembly
 from xarray import DataArray
-from PIL import Image
 
 import brainio
 from brainio import assemblies
 from brainio import fetch
-from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath
+from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath, MetadataAssembly, \
+    SpikeTimesAssembly, get_metadata
 
 
 def test_get_levels():
@@ -332,22 +332,22 @@ class TestMultiDimApply:
     pytest.param('dicarlo.BashivanKar2019.naturalistic', marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.BashivanKar2019.synthetic', marks=[pytest.mark.private_access]),
 ])
-def test_existence(assembly_identifier):
+def test_existence(assembly_identifier, brainio_home_session):
     assert brainio.get_assembly(assembly_identifier) is not None
 
 
-def test_nr_assembly_ctor():
+def test_nr_assembly_ctor(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     assert isinstance(assy_hvm, DataAssembly)
 
 
-def test_load():
+def test_load(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     assert assy_hvm.shape == (256, 148480, 1)
     print(assy_hvm)
 
 
-def test_repr():
+def test_repr(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     repr_hvm = repr(assy_hvm)
     assert "neuroid" in repr_hvm
@@ -358,13 +358,13 @@ def test_repr():
     print(repr_hvm)
 
 
-def test_getitem():
+def test_getitem(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     single = assy_hvm[0, 0, 0]
     assert type(single) is type(assy_hvm)
 
 
-def test_fetch():
+def test_fetch(brainio_home):
     local_path = fetch.fetch_file(
         location_type='S3',
         location='https://brainio.dicarlo.s3.amazonaws.com/assy_dicarlo_MajajHong2015_public.nc',
@@ -372,7 +372,7 @@ def test_fetch():
     assert os.path.exists(local_path)
 
 
-def test_wrap():
+def test_wrap(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     hvm_v3 = assy_hvm.sel(variation=3)
     assert isinstance(hvm_v3, assemblies.NeuronRecordingAssembly)
@@ -396,7 +396,7 @@ def test_wrap():
     assert isinstance(hvm_it_v3_t, assemblies.NeuronRecordingAssembly)
 
 
-def test_multi_group():
+def test_multi_group(brainio_home_session):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     hvm_it_v3 = assy_hvm.sel(variation=3).sel(region="IT")
     hvm_it_v3.load()
@@ -405,13 +405,13 @@ def test_multi_group():
     assert "object_name" in hvm_it_v3_obj.indexes["presentation"].names
 
 
-def test_stimulus_set_from_assembly():
+def test_stimulus_set_from_assembly(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     stimulus_set = assy_hvm.attrs["stimulus_set"]
     assert stimulus_set.shape[0] == np.unique(assy_hvm["image_id"]).shape[0]
-    for image_id in stimulus_set['image_id']:
-        image_path = stimulus_set.get_image(image_id)
-        assert os.path.exists(image_path)
+    for stimulus_id in stimulus_set['image_id']:
+        stimulus_path = stimulus_set.get_stimulus(stimulus_id)
+        assert os.path.exists(stimulus_path)
 
 
 def test_inplace():
@@ -425,8 +425,42 @@ def test_inplace():
     pytest.param('dicarlo.BashivanKar2019.naturalistic', (24320, 233, 1), 309760, marks=[pytest.mark.private_access]),
     pytest.param('dicarlo.BashivanKar2019.synthetic', (21360, 233, 1), 4319940, marks=[pytest.mark.private_access]),
 ])
-def test_synthetic(assembly, shape, nans):
+def test_synthetic(assembly, shape, nans, brainio_home_session):
     assy = brainio.get_assembly(assembly)
     assert assy.shape == shape
     assert np.count_nonzero(np.isnan(assy)) == nans
+
+
+class TestFromFiles:
+    def test_from_files(self, test_stimulus_set_identifier):
+        p = get_nc_path()
+        s = StimulusSet.from_files(get_csv_path(), get_dir_path())
+        a = DataAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
+        assert a.shape == (6, 3)
+
+    def test_load_extras(self, test_stimulus_set_identifier):
+        p = get_nc_extras_path()
+        s = StimulusSet.from_files(get_csv_path(), get_dir_path())
+        a = SpikeTimesAssembly.from_files(p, stimulus_set_identifier=test_stimulus_set_identifier, stimulus_set=s)
+        assert isinstance(a, SpikeTimesAssembly)
+        assert a.shape == (1000,)
+        assert "test" in a.attrs
+        extra = a.attrs["test"]
+        assert extra is not None
+        assert isinstance(extra, MetadataAssembly)
+        assert "stimulus_set" in extra.attrs
+        assert extra.shape == (40,)
+
+
+def test_get_metadata():
+    a = make_proto_assembly()
+    md_all = list(get_metadata(a))
+    assert len(md_all) == 4
+    md_coo = list(get_metadata(a, include_indexes=False))
+    assert len(md_coo) == 0
+    md_ind = list(get_metadata(a, include_coords=False, as_levels=False))
+    assert len(md_ind) == 2
+    md_lev = list(get_metadata(a, include_coords=False))
+    assert len(md_lev) == 4
+
 

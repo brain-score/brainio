@@ -1,9 +1,15 @@
+import logging
 from collections import OrderedDict, defaultdict
 
 import itertools
+
+import netCDF4
 import numpy as np
+import pandas as pd
 import xarray as xr
 from xarray import DataArray, IndexVariable
+
+_logger = logging.getLogger(__name__)
 
 
 def is_fastpath(*args, **kwargs):
@@ -41,6 +47,23 @@ class DataAssembly(DataArray):
             temp = DataArray(*args, **kwargs)
             temp = gather_indexes(temp)
             super(DataAssembly, self).__init__(temp)
+
+    @classmethod
+    def get_loader_class(cls):
+        return StimulusMergeAssemblyLoader
+
+    @classmethod
+    def from_files(cls, file_path, **kwargs):
+        loader_class = cls.get_loader_class()
+        loader = loader_class(
+            cls=cls,
+            file_path=file_path,
+            **kwargs,
+        )
+        return loader.load()
+
+    def validate(self):
+        pass
 
     def multi_groupby(self, group_coord_names, *args, **kwargs):
         if len(group_coord_names) < 2:
@@ -206,6 +229,10 @@ class NeuroidAssembly(DataAssembly):
     or neuron analogues.  """
     __slots__ = ()
 
+    def validate(self):
+        assert set(self.dims) == {'presentation', 'neuroid'} or \
+               set(self.dims) == {'presentation', 'neuroid', 'time_bin'}
+
 
 class NeuronRecordingAssembly(NeuroidAssembly):
     """A NeuronRecordingAssembly is a NeuroidAssembly containing data recorded from neurons.  """
@@ -222,27 +249,31 @@ class PropertyAssembly(DataAssembly):
     """A PropertyAssembly is a DataAssembly containing single neuronal properties data.  """
     __slots__ = ()
 
-
-def coords_for_dim(xr_data, dim, exclude_indexes=True):
-    result = OrderedDict()
-    for key, value in xr_data.coords.variables.items():
-        only_this_dim = value.dims == (dim,)
-        exclude_because_index = exclude_indexes and isinstance(value, xr.IndexVariable)
-        if only_this_dim and not exclude_because_index:
-            result[key] = value
-    return result
+    @classmethod
+    def get_loader_class(cls):
+        return StimulusReferenceAssemblyLoader
 
 
-def gather_indexes(xr_data):
-    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
-    coords_d = {}
-    for dim in xr_data.dims:
-        coords = coords_for_dim(xr_data, dim)
-        if coords:
-            coords_d[dim] = list(coords.keys())
-    if coords_d:
-        xr_data = xr_data.set_index(append=True, **coords_d)
-    return xr_data
+class SpikeTimesAssembly(NeuronRecordingAssembly):
+    """A SpikeTimesAssembly is a DataAssembly containing a one-dimensional array of neural spike event timestamps.  """
+    __slots__ = ()
+
+    @classmethod
+    def get_loader_class(cls):
+        return GroupAppendAssemblyLoader
+
+    def validate(self):
+        assert set(self.dims) == {'event'}
+
+
+class MetadataAssembly(DataAssembly):
+    """A MetadataAssembly is a DataAssembly containing metadata, pertaining to another DataAssembly, that is best
+    described by a DataAssembly but has different dimensions from the DataAssembly it describes.  """
+    __slots__ = ()
+
+    @classmethod
+    def get_loader_class(cls):
+        return StimulusReferenceAssemblyLoader
 
 
 class GroupbyBridge(object):
@@ -297,6 +328,45 @@ def array_is_element(arr, element):
     return len(arr) == 1 and arr[0] == element
 
 
+def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
+                 include_indexes=True, as_levels=True):
+    """
+    Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
+    """
+    def filter(name, dims, values, names_only):
+        if names_only:
+            return name
+        else:
+            return name, dims, values
+    if dims is None:
+        dims = assembly.dims
+    for name in assembly.coords.variables:
+        values = assembly.coords.variables[name]
+        if set(values.dims) <= set(dims):
+            is_index = isinstance(values, IndexVariable)
+            if is_index:
+                if  include_indexes:
+                    if as_levels and values.level_names:
+                        for level in values.level_names:
+                            level_values = assembly.coords[level]
+                            yield filter(level, level_values.dims, level_values.values, names_only)
+                    else:
+                        yield filter(name, values.dims, values.values, names_only)
+            else:
+                if include_coords:
+                    yield filter(name, values.dims, values.values, names_only)
+
+
+def coords_for_dim(xr_data, dim, exclude_indexes=True):
+    result = OrderedDict()
+    for key, value in xr_data.coords.variables.items():
+        only_this_dim = value.dims == (dim,)
+        exclude_because_index = exclude_indexes and isinstance(value, xr.IndexVariable)
+        if only_this_dim and not exclude_because_index:
+            result[key] = value
+    return result
+
+
 def walk_coords(assembly):
     """
     walks through coords and all levels, just like the `__repr__` function, yielding `(name, dims, values)`.
@@ -322,3 +392,108 @@ def get_levels(assembly):
             for level in value.level_names:
                 levels.append(level)
     return levels
+
+
+def gather_indexes(xr_data):
+    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
+    coords_d = {}
+    for dim in xr_data.dims:
+        coords = coords_for_dim(xr_data, dim)
+        if coords:
+            coords_d[dim] = list(coords.keys())
+    if coords_d:
+        xr_data = xr_data.set_index(append=True, **coords_d)
+    return xr_data
+
+
+class AssemblyLoader:
+    """
+    Loads a DataAssembly from a file.
+    """
+
+    def __init__(self, cls, file_path, group=None, **kwargs):
+        self.assembly_class = cls
+        self.file_path = file_path
+        self.group = group
+
+    def load(self):
+        data_array = xr.open_dataarray(self.file_path, group=self.group)
+        self.correct_stimulus_id_name(data_array)
+        result = self.assembly_class(data=data_array)
+        return result
+
+    def correct_stimulus_id_name(self, data_array):
+        if 'image_id' in data_array and 'stimulus_id' not in data_array:
+            data_array['stimulus_id'] = data_array['image_id']
+
+
+class StimulusReferenceAssemblyLoader(AssemblyLoader):
+    """
+    Loads an assembly and adds a pointer to a stimulus set.
+    """
+
+    def __init__(self, cls, file_path, stimulus_set_identifier=None, stimulus_set=None, **kwargs):
+        super(StimulusReferenceAssemblyLoader, self).__init__(cls, file_path, **kwargs)
+        self.stimulus_set_identifier = stimulus_set_identifier
+        self.stimulus_set = stimulus_set
+
+    def load(self):
+        result = super(StimulusReferenceAssemblyLoader, self).load()
+        result.attrs["stimulus_set_identifier"] = self.stimulus_set_identifier
+        result.attrs["stimulus_set"] = self.stimulus_set
+        return result
+
+
+class StimulusMergeAssemblyLoader(StimulusReferenceAssemblyLoader):
+    """
+    Loads an assembly and merges in metadata from a stimulus set.
+    """
+
+    def load(self):
+        result = super(StimulusMergeAssemblyLoader, self).load()
+        result = self.merge_stimulus_set_meta(result, self.stimulus_set)
+        return result
+
+    def merge_stimulus_set_meta(self, assy, stimulus_set):
+        axis_name, index_column = "presentation", "stimulus_id"
+        assy = assy.reset_index(list(assy.indexes))
+        df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
+        if 'stimulus_id' not in df_of_coords.columns:
+            index_column = 'image_id' # for legacy packages
+        cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
+        merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
+        for col in stimulus_set.columns:
+            assy[col] = (axis_name, merged[col])
+        assy = self.assembly_class(data=assy)
+        return assy
+
+
+class GroupAppendAssemblyLoader(StimulusReferenceAssemblyLoader):
+    """
+    Loads an assembly plus any included metadata assemblies and a pointer to a stimulus set.
+    """
+
+    def load(self):
+        result = super(GroupAppendAssemblyLoader, self).load()
+        nc = netCDF4.Dataset(self.file_path, "r")
+        for group in nc.groups:
+            try:
+                loader_class = MetadataAssembly.get_loader_class()
+                loader = loader_class(
+                    cls=MetadataAssembly,
+                    file_path=self.file_path,
+                    stimulus_set_identifier=self.stimulus_set_identifier,
+                    stimulus_set=self.stimulus_set,
+                    group=group
+                )
+                meta = loader.load()
+                result.attrs[group] = meta
+            except Exception as e:
+                _logger.warning(
+                    f"netCDF file {self.file_path} contains a group that is not loadable as a MetadataAssembly.  ",
+                    exc_info=True
+                )
+        return result
+
+
+

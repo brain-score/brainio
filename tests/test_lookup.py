@@ -71,17 +71,17 @@ def test_catalogs():
     assert len(cats) == 2
     assert "brainio_test" in cats
     assert "brainio_test2" in cats
-    dfs = brainio.lookup.get_lookups()
-    assert dfs["brainio_test"].attrs[brainio.lookup.CATALOG_PATH_KEY].endswith(".csv")
-    assert dfs["brainio_test2"].attrs[brainio.lookup.CATALOG_PATH_KEY].endswith(".csv")
+    dfs = brainio.lookup._load_installed_catalogs()
+    assert str(dfs["brainio_test"].source_path).endswith(".csv")
+    assert str(dfs["brainio_test2"].source_path).endswith(".csv")
     assert len(dfs["brainio_test"]) == 12
     assert len(dfs["brainio_test2"]) == 9
-    concat = brainio.lookup.data()
+    concat = brainio.lookup.combined_catalog()
     assert len(concat) == len(dfs["brainio_test"]) + len(dfs["brainio_test2"])
 
 
 def test_duplicates():
-    all_lookups = brainio.lookup.data()
+    all_lookups = brainio.lookup.combined_catalog()
     match_stim = all_lookups['lookup_type'] == brainio.lookup.TYPE_STIMULUS_SET
     match_csv = all_lookups.apply(brainio.lookup._is_csv_lookup, axis=1)
     match_zip = all_lookups.apply(brainio.lookup._is_zip_lookup, axis=1)
