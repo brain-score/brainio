@@ -456,11 +456,11 @@ def test_get_metadata():
     a = make_proto_assembly()
     md_all = list(get_metadata(a))
     assert len(md_all) == 4
-    md_coo = list(get_metadata(a, include_indexes=False))
+    md_coo = list(get_metadata(a, include_indexes=False, include_levels=False))
     assert len(md_coo) == 0
-    md_ind = list(get_metadata(a, include_coords=False, as_levels=False))
+    md_ind = list(get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
     assert len(md_ind) == 2
-    md_lev = list(get_metadata(a, include_coords=False))
+    md_lev = list(get_metadata(a, include_coords=False, include_indexes=False))
     assert len(md_lev) == 4
 
 

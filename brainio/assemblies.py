@@ -329,41 +329,44 @@ def array_is_element(arr, element):
 
 
 def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
-                 include_indexes=True, as_levels=True):
+                 include_indexes=True, include_multi_indexes=False, include_levels=True):
     """
     Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
     """
-    def filter(name, dims, values, names_only):
+    def what(name, dims, values, names_only):
         if names_only:
             return name
         else:
             return name, dims, values
     if dims is None:
-        dims = assembly.dims
+        dims = assembly.dims + (None,) # all dims plus dimensionless coords
     for name in assembly.coords.variables:
         values = assembly.coords.variables[name]
-        if set(values.dims) <= set(dims):
+        is_subset = values.dims and (set(values.dims) <= set(dims))
+        is_dimless = (not values.dims) and None in dims
+        if is_subset or is_dimless:
             is_index = isinstance(values, IndexVariable)
             if is_index:
-                if  include_indexes:
-                    if as_levels and values.level_names:
+                if values.level_names: # it's a MultiIndex
+                    if include_multi_indexes:
+                        yield what(name, values.dims, values.values, names_only)
+                    if include_levels:
                         for level in values.level_names:
                             level_values = assembly.coords[level]
-                            yield filter(level, level_values.dims, level_values.values, names_only)
-                    else:
-                        yield filter(name, values.dims, values.values, names_only)
+                            yield what(level, level_values.dims, level_values.values, names_only)
+                else: # it's an Index
+                    if include_indexes:
+                        yield what(name, values.dims, values.values, names_only)
             else:
                 if include_coords:
-                    yield filter(name, values.dims, values.values, names_only)
+                    yield what(name, values.dims, values.values, names_only)
 
 
-def coords_for_dim(xr_data, dim, exclude_indexes=True):
+def coords_for_dim(assembly, dim):
     result = OrderedDict()
-    for key, value in xr_data.coords.variables.items():
-        only_this_dim = value.dims == (dim,)
-        exclude_because_index = exclude_indexes and isinstance(value, xr.IndexVariable)
-        if only_this_dim and not exclude_because_index:
-            result[key] = value
+    meta = get_metadata(assembly, dims=(dim,), include_indexes=False, include_levels=False)
+    for name, dims, values in meta:
+        result[name] = values
     return result
 
 
@@ -371,39 +374,24 @@ def walk_coords(assembly):
     """
     walks through coords and all levels, just like the `__repr__` function, yielding `(name, dims, values)`.
     """
-    coords = {}
-
-    for name in assembly.coords.variables:
-        values = assembly.coords.variables[name]
-        is_index = isinstance(values, IndexVariable)
-        if is_index and values.level_names:
-            for level in values.level_names:
-                level_values = assembly.coords[level]
-                yield level, level_values.dims, level_values.values
-        else:
-            yield name, values.dims, values.values
-    return coords
+    yield from get_metadata(assembly)
 
 
 def get_levels(assembly):
-    levels = []
-    for key, value in assembly.coords.variables.items():
-        if isinstance(value, IndexVariable) and value.level_names:
-            for level in value.level_names:
-                levels.append(level)
+    levels = list(get_metadata(assembly, names_only=True, include_coords=False, include_indexes=False))
     return levels
 
 
-def gather_indexes(xr_data):
+def gather_indexes(assembly):
     """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
     coords_d = {}
-    for dim in xr_data.dims:
-        coords = coords_for_dim(xr_data, dim)
-        if coords:
-            coords_d[dim] = list(coords.keys())
+    for dim in assembly.dims:
+        coord_names = list(get_metadata(assembly, dims=(dim,), names_only=True, include_indexes=False, include_levels=False))
+        if coord_names:
+            coords_d[dim] = coord_names
     if coords_d:
-        xr_data = xr_data.set_index(append=True, **coords_d)
-    return xr_data
+        assembly = assembly.set_index(append=True, **coords_d)
+    return assembly
 
 
 class AssemblyLoader:
@@ -455,17 +443,25 @@ class StimulusMergeAssemblyLoader(StimulusReferenceAssemblyLoader):
         return result
 
     def merge_stimulus_set_meta(self, assy, stimulus_set):
-        axis_name, index_column = "presentation", "stimulus_id"
+        dim_name, index_column = "presentation", "stimulus_id"
         assy = assy.reset_index(list(assy.indexes))
-        df_of_coords = pd.DataFrame(coords_for_dim(assy, axis_name))
-        if 'stimulus_id' not in df_of_coords.columns:
-            index_column = 'image_id' # for legacy packages
+        assy = self.correct_stimulus_id_name(assy)
+        df_of_coords = pd.DataFrame(coords_for_dim(assy, dim_name))
         cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
         merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
         for col in stimulus_set.columns:
-            assy[col] = (axis_name, merged[col])
+            assy[col] = (dim_name, merged[col])
         assy = self.assembly_class(data=assy)
         return assy
+
+    @classmethod
+    def correct_stimulus_id_name(cls, assembly):
+        names = get_metadata(assembly, dims=('presentation',), names_only=True)
+        if 'image_id' in names and 'stimulus_id' not in names:
+            assembly = assembly.assign_coords(
+                stimulus_id=('presentation', assembly['image_id']),
+            )
+        return assembly
 
 
 class GroupAppendAssemblyLoader(StimulusReferenceAssemblyLoader):
