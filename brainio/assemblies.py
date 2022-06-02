@@ -405,14 +405,14 @@ class AssemblyLoader:
         self.group = group
 
     def load(self):
-        data_array = xr.open_dataarray(self.file_path, group=self.group)
-        self.correct_stimulus_id_name(data_array)
-        result = self.assembly_class(data=data_array)
+        result = xr.open_dataarray(self.file_path, group=self.group)
+        result = self.correct_stimulus_id_name(result)
+        result = self.assembly_class(data=result)
         return result
 
     @classmethod
     def correct_stimulus_id_name(cls, assembly):
-        names = get_metadata(assembly, dims=('presentation',), names_only=True)
+        names = list(get_metadata(assembly, dims=('presentation',), names_only=True))
         if 'image_id' in names and 'stimulus_id' not in names:
             assembly = assembly.assign_coords(
                 stimulus_id=('presentation', assembly['image_id']),
