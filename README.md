@@ -74,25 +74,65 @@ source for the project.  Packaging and cataloging are covered below.
 
 The most commonly used methods of the BrainIO API are:  
 
-* **List Catalogs**: `brainio.list_catalogs()` lists the identifiers of all the BrainIO catalogs installed in your current Python environment.  
 * **List Stimulus Sets**:  `brainio.list_stimulus_sets()` lists the identifiers of all the BrainIO stimulus sets available via your installed catalogs.  
 * **List Data Assemblies**:  `brainio.list_assemblies()` lists the identifiers of all the BrainIO data assemblies available via your installed catalogs.  
-
-
-* **Stimulus Set From Files**:  `brainio.stimuli.StimulusSet.from_files(csv_path, dir_path)` loads into memory a stimulus set contained in the provided files.  
-* **Data Assembly From Files**:  `brainio.assemblies.DataAssembly.from_files(file_path, group=None, stimulus_set_identifier=None, stimulus_set=None, **kwargs)` loads into memory a data assembly contained in the provided file.  Usually called from a subclass of DataAssembly.  
+* **List Catalogs**: `brainio.list_catalogs()` lists the identifiers of all the BrainIO catalogs installed in your current Python environment.  
 
 
 * **Get Stimulus Set**:  `brainio.get_stimulus_set(identifier)` looks up, fetches, loads and returns the stimulus set matching the given unique identifier.  
 * **Get Data Assembly**:  `brainio.get_assembly(identifier)` looks up, fetches, loads and returns the data assembly matching the given unique identifier (including getting any associated stimulus set).  
 
+
+* **Stimulus Set From Files**:  `brainio.stimuli.StimulusSet.from_files(csv_path, dir_path)` loads into memory a stimulus set contained in the provided files.  
+* **Data Assembly From Files**:  `brainio.assemblies.DataAssembly.from_files(file_path, **kwargs)` loads into memory a data assembly contained in the provided file.  Usually called from a subclass of DataAssembly.  
+
 ## Types of Usage
 
 There are four main ways to use the Python BrainIO tools:
-* To access and analyze stimuli and data stored in files conforming to the [BrainIO Format Specification](docs/SPECIFICATION.md)
 * To look up and fetch stimuli and data that are packaged and cataloged.
+* To access and analyze stimuli and data stored in files conforming to the [BrainIO Format Specification](docs/SPECIFICATION.md)
 * To add packages of stimuli and data to an existing catalog. 
 * To create a new project that provides a catalog.   
+
+### Using Packaged and Cataloged Stimulus Sets And Data Assemblies
+
+Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_stimulus`:
+
+```pycon
+>>> from brainio import get_assembly, get_stimulus_set
+>>> hvm_stim = get_stimulus_set(identifier="dicarlo.hvm")
+>>> hvm_stim
+        id                             background_id         s  ... rxy_semantic ryz_semantic        rxz
+0        1  ecd40f3f6d7a4d6d88134d648884e0b9b364efc9  1.000000  ...    90.000000    -0.000000   0.000000
+1        2  006d66c207c6417574f62f0560c6b2b40a9ec5a1  1.000000  ...    -0.000000    -0.000000   0.000000
+...
+5758  5759  2363c8c3859603ee9db7f83dd7ba5b6989154258  0.791250  ...   -75.159000    12.283000  29.466000
+5759  5760  a7fc954d2bd08fc2c4d3ade347f41a03a5850131  1.050000  ...   -67.467580     7.598457 -25.152591
+
+[5760 rows x 18 columns]
+>>> hvm_assy = get_assembly(identifier="dicarlo.MajajHong2015.public")
+>>> hvm_assy
+<xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 256, presentation: 148480, time_bin: 1)>
+array([[[ 0.06092933],
+        [-0.8479065 ],
+...
+        [ 1.0052351 ],
+        [-0.2989609 ]]], dtype=float32)
+Coordinates:
+  * neuroid          (neuroid) MultiIndex
+  - neuroid_id       (neuroid) object 'Chabo_L_M_5_9' ... 'Tito_L_M_8_0'
+...
+  * time_bin         (time_bin) MultiIndex
+  - time_bin_start   (time_bin) int64 70
+  - time_bin_end     (time_bin) int64 170
+Attributes:
+    stimulus_set_identifier:  dicarlo.hvm-public
+    stimulus_set:                     id                             backgrou...
+    identifier:               dicarlo.MajajHong2015.public
+
+>>> hvm_stim.get_stimulus(stimulus_id="ecd40f3f6d7a4d6d88134d648884e0b9b364efc9")
+"/Users/me/.brainio/stimulus_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
+```
 
 ### Opening Stimulus Sets And Data Assemblies From Files
 
@@ -222,46 +262,6 @@ Attributes:
     stimulus_set:                     id                             backgrou...
 >>> write_netcdf(assembly=hvm_assy_new, target_netcdf_file='hvm_aIT_apple.nc')
 '7da262e1d35de5fc26bbbe9b10c481792cef1bde'
-```
-
-### Using Packaged and Cataloged Stimulus Sets And Data Assemblies
-
-Here's an example of using BrainIO in a Python interactive interpreter session, retrieving a Stimulus Set and a Data Assembly and displaying their text representations, and retrieving a stimulus file.  The types of the returned objects are `StimulusSet`, a subclass of a [pandas](https://pandas.pydata.org/) `DataFrame`, and `DataAssembly`, a subclass of an [xarray](https://xarray.pydata.org/) `DataArray`.  We use the functions `get_stimulus_set` and `get_assembly` and the `StimulusSet` method `get_stimulus`:
-
-```pycon
->>> from brainio import get_assembly, get_stimulus_set
->>> hvm_stim = get_stimulus_set(identifier="dicarlo.hvm")
->>> hvm_stim
-        id                             background_id         s  ... rxy_semantic ryz_semantic        rxz
-0        1  ecd40f3f6d7a4d6d88134d648884e0b9b364efc9  1.000000  ...    90.000000    -0.000000   0.000000
-1        2  006d66c207c6417574f62f0560c6b2b40a9ec5a1  1.000000  ...    -0.000000    -0.000000   0.000000
-...
-5758  5759  2363c8c3859603ee9db7f83dd7ba5b6989154258  0.791250  ...   -75.159000    12.283000  29.466000
-5759  5760  a7fc954d2bd08fc2c4d3ade347f41a03a5850131  1.050000  ...   -67.467580     7.598457 -25.152591
-
-[5760 rows x 18 columns]
->>> hvm_assy = get_assembly(identifier="dicarlo.MajajHong2015.public")
->>> hvm_assy
-<xarray.NeuronRecordingAssembly 'dicarlo.MajajHong2015.public' (neuroid: 256, presentation: 148480, time_bin: 1)>
-array([[[ 0.06092933],
-        [-0.8479065 ],
-...
-        [ 1.0052351 ],
-        [-0.2989609 ]]], dtype=float32)
-Coordinates:
-  * neuroid          (neuroid) MultiIndex
-  - neuroid_id       (neuroid) object 'Chabo_L_M_5_9' ... 'Tito_L_M_8_0'
-...
-  * time_bin         (time_bin) MultiIndex
-  - time_bin_start   (time_bin) int64 70
-  - time_bin_end     (time_bin) int64 170
-Attributes:
-    stimulus_set_identifier:  dicarlo.hvm-public
-    stimulus_set:                     id                             backgrou...
-    identifier:               dicarlo.MajajHong2015.public
-
->>> hvm_stim.get_stimulus(stimulus_id="ecd40f3f6d7a4d6d88134d648884e0b9b364efc9")
-"/Users/me/.brainio/stimulus_dicarlo_hvm/astra_rx+00.000_ry+00.000_rz+00.000_tx+00.000_ty+00.000_s+01.000_ecd40f3f6d7a4d6d88134d648884e0b9b364efc9_256x256.png"
 ```
 
 ### Packaging And Cataloging Stimulus Sets And Data Assemblies In An Existing Catalog

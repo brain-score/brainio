@@ -409,7 +409,7 @@ def test_stimulus_set_from_assembly(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     stimulus_set = assy_hvm.attrs["stimulus_set"]
     assert stimulus_set.shape[0] == np.unique(assy_hvm["image_id"]).shape[0]
-    for stimulus_id in stimulus_set['image_id']:
+    for stimulus_id in stimulus_set['stimulus_id']:
         stimulus_path = stimulus_set.get_stimulus(stimulus_id)
         assert os.path.exists(stimulus_path)
 

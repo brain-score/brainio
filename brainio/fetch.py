@@ -23,6 +23,7 @@ _local_data_path = None
 
 
 def get_local_data_path():
+    # This makes it easier to mock.
     global _local_data_path
     if _local_data_path is None:
         _local_data_path = os.path.expanduser(os.getenv(BRAINIO_HOME, '~/.brainio'))

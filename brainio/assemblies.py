@@ -410,9 +410,14 @@ class AssemblyLoader:
         result = self.assembly_class(data=data_array)
         return result
 
-    def correct_stimulus_id_name(self, data_array):
-        if 'image_id' in data_array and 'stimulus_id' not in data_array:
-            data_array['stimulus_id'] = data_array['image_id']
+    @classmethod
+    def correct_stimulus_id_name(cls, assembly):
+        names = get_metadata(assembly, dims=('presentation',), names_only=True)
+        if 'image_id' in names and 'stimulus_id' not in names:
+            assembly = assembly.assign_coords(
+                stimulus_id=('presentation', assembly['image_id']),
+            )
+        return assembly
 
 
 class StimulusReferenceAssemblyLoader(AssemblyLoader):
@@ -439,13 +444,13 @@ class StimulusMergeAssemblyLoader(StimulusReferenceAssemblyLoader):
 
     def load(self):
         result = super(StimulusMergeAssemblyLoader, self).load()
-        result = self.merge_stimulus_set_meta(result, self.stimulus_set)
+        if self.stimulus_set is not None:
+            result = self.merge_stimulus_set_meta(result, self.stimulus_set)
         return result
 
     def merge_stimulus_set_meta(self, assy, stimulus_set):
         dim_name, index_column = "presentation", "stimulus_id"
         assy = assy.reset_index(list(assy.indexes))
-        assy = self.correct_stimulus_id_name(assy)
         df_of_coords = pd.DataFrame(coords_for_dim(assy, dim_name))
         cols_to_use = stimulus_set.columns.difference(df_of_coords.columns.difference([index_column]))
         merged = df_of_coords.merge(stimulus_set[cols_to_use], on=index_column, how="left")
@@ -453,15 +458,6 @@ class StimulusMergeAssemblyLoader(StimulusReferenceAssemblyLoader):
             assy[col] = (dim_name, merged[col])
         assy = self.assembly_class(data=assy)
         return assy
-
-    @classmethod
-    def correct_stimulus_id_name(cls, assembly):
-        names = get_metadata(assembly, dims=('presentation',), names_only=True)
-        if 'image_id' in names and 'stimulus_id' not in names:
-            assembly = assembly.assign_coords(
-                stimulus_id=('presentation', assembly['image_id']),
-            )
-        return assembly
 
 
 class GroupAppendAssemblyLoader(StimulusReferenceAssemblyLoader):
