@@ -409,7 +409,7 @@ def test_stimulus_set_from_assembly(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     stimulus_set = assy_hvm.attrs["stimulus_set"]
     assert stimulus_set.shape[0] == np.unique(assy_hvm["image_id"]).shape[0]
-    for stimulus_id in stimulus_set['image_id']:
+    for stimulus_id in stimulus_set['stimulus_id']:
         stimulus_path = stimulus_set.get_stimulus(stimulus_id)
         assert os.path.exists(stimulus_path)
 
@@ -456,11 +456,11 @@ def test_get_metadata():
     a = make_proto_assembly()
     md_all = list(get_metadata(a))
     assert len(md_all) == 4
-    md_coo = list(get_metadata(a, include_indexes=False))
+    md_coo = list(get_metadata(a, include_indexes=False, include_levels=False))
     assert len(md_coo) == 0
-    md_ind = list(get_metadata(a, include_coords=False, as_levels=False))
+    md_ind = list(get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
     assert len(md_ind) == 2
-    md_lev = list(get_metadata(a, include_coords=False))
+    md_lev = list(get_metadata(a, include_coords=False, include_indexes=False))
     assert len(md_lev) == 4
 
 
