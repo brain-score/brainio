@@ -111,6 +111,10 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
     assert identifier in lookup.list_stimulus_sets()
     gotten = brainio.get_stimulus_set(identifier)
     assert gotten is not None
+    assert gotten.shape == (10, 3)
+    catalog = lookup.get_catalog(test_catalog_identifier)
+    assert 'lookup_source' not in catalog
+    assert 'source_catalog' not in catalog
 
 
 @pytest.mark.private_access

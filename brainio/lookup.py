@@ -48,10 +48,13 @@ def get_catalogs():
 
 
 def combined_catalog():
-    catalogs = get_catalogs()
-    for identifier, catalog in catalogs.items():
-        catalog[SOURCE_CATALOG] = identifier
-    concat_catalogs = pd.concat(catalogs.values(), ignore_index=True)
+    source_catalogs = get_catalogs()
+    target_catalogs = {}
+    for identifier, source_catalog in source_catalogs.items():
+        target_catalog = source_catalog.copy()
+        target_catalog[SOURCE_CATALOG] = identifier
+        target_catalogs[identifier] = target_catalog
+    concat_catalogs = pd.concat(target_catalogs.values(), ignore_index=True)
     return concat_catalogs
 
 
@@ -130,7 +133,6 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
         'location': f"https://{bucket_name}.s3.amazonaws.com/{s3_key}",
         'sha1': sha1,
         'stimulus_set_identifier': stimulus_set_identifier,
-        'lookup_source': catalog_identifier,
     }
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
