@@ -111,11 +111,18 @@ def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identif
     assert identifier in lookup.list_stimulus_sets()
     gotten = brainio.get_stimulus_set(identifier)
     assert gotten is not None
+    assert gotten.shape == (10, 3)
+    catalog = lookup.get_catalog(test_catalog_identifier)
+    assert 'lookup_source' not in catalog
+    assert 'source_catalog' not in catalog
 
 
 @pytest.mark.private_access
 def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
                                restore_this_file, restore_catalog):
+    catalog = lookup.get_catalog(test_catalog_identifier)
+    assert 'lookup_source' not in catalog
+    assert 'source_catalog' not in catalog
     stimulus_set = StimulusSet(make_stimulus_set_df())
     stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
@@ -140,6 +147,9 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
     assert gotten.shape == (6, 3, 1)
+    catalog = lookup.get_catalog(test_catalog_identifier)
+    assert 'lookup_source' not in catalog
+    assert 'source_catalog' not in catalog
 
 
 @pytest.mark.private_access
