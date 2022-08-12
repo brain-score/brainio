@@ -1,22 +1,22 @@
 import logging
+import mimetypes
 import os
+import re
 import zipfile
 from pathlib import Path
-import re
-import mimetypes
+from typing import Union
 
 import boto3
+import numpy as np
 import pandas as pd
 import xarray as xr
-from tqdm import tqdm
-import numpy as np
 from PIL import Image
+from tqdm import tqdm
+from xarray import DataArray
 
-import brainio.assemblies
 from brainio import lookup, list_stimulus_sets, fetch
 from brainio.fetch import resolve_assembly_class
 from brainio.lookup import TYPE_ASSEMBLY, TYPE_STIMULUS_SET, sha1_hash
-from xarray import DataArray
 
 _logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def create_stimulus_zip(proto_stimulus_set, target_zip_path):
     return sha1, arcnames
 
 
-def upload_to_s3(source_file_path, bucket_name, target_s3_key):
+def upload_to_s3(source_file_path: Union[Path, str], bucket_name: str, target_s3_key: str) -> dict:
     _logger.debug(f"Uploading {source_file_path} to {bucket_name}/{target_s3_key}")
 
     file_size = os.path.getsize(source_file_path)
@@ -57,6 +57,9 @@ def upload_to_s3(source_file_path, bucket_name, target_s3_key):
 
         client = boto3.client('s3')
         client.upload_file(str(source_file_path), bucket_name, target_s3_key, Callback=progress_hook)
+        # retrieve newly uploaded object's properties
+        object_properties: dict = client.head_object(Bucket=bucket_name, Key=target_s3_key)
+        return object_properties
 
 
 def extract_specific(proto_stimulus_set):
@@ -93,7 +96,7 @@ def check_image_format(image, identifier):
 
 def check_stimulus_numbers(stimulus_set):
     stimulus_numbers = [int(stimulus_file_path[stimulus_file_path.rfind('_') + 1:stimulus_file_path.rfind('.')])
-                     for stimulus_file_path in list(stimulus_set.stimulus_paths.values())]
+                        for stimulus_file_path in list(stimulus_set.stimulus_paths.values())]
     stimulus_numbers.sort()
     for i in range(len(stimulus_numbers) - 1):
         assert stimulus_numbers[i] == stimulus_numbers[i + 1] - 1, "StimulusSet files not sequentially numbered"
@@ -109,7 +112,7 @@ def check_experiment_stimulus_set(stimulus_set):
     """
     col_name = 'stimulus_id'
     if 'stimulus_id' not in stimulus_set.columns:
-        col_name = 'image_id' # for legacy packages
+        col_name = 'image_id'  # for legacy packages
     assert len(stimulus_set[col_name]), "StimulusSet is empty"
     file_paths = list(stimulus_set.stimulus_paths.values())
 
@@ -118,7 +121,8 @@ def check_experiment_stimulus_set(stimulus_set):
     for file_path in file_paths:
         check_stimulus_naming_convention(file_path[file_path.rfind('/') + 1:])
         assert os.path.isfile(file_path), f"{file_path} does not exist"
-        assert file_type_0 == mimetypes.guess_type(file_path)[0], f"{file_path} is a different media type than other stimuli in the StimulusSet"
+        assert file_type_0 == mimetypes.guess_type(file_path)[0], \
+            f"{file_path} is a different media type than other stimuli in the StimulusSet"
         if file_type_0.startswith('image'):
             image = Image.open(file_path)
             check_image_format(image, file_path)
@@ -258,7 +262,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
         for k, ex in extras.items():
             assert isinstance(ex, DataArray)
             netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group=k)
-    upload_to_s3(target_netcdf_path, bucket_name, s3_key)
+    object_properties = upload_to_s3(target_netcdf_path, bucket_name, s3_key)
     lookup.append(
         catalog_identifier=catalog_identifier,
         object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
@@ -266,4 +270,4 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
         bucket_name=bucket_name, sha1=netcdf_kf_sha1,
         s3_key=s3_key, cls=assembly_class_name
     )
-    _logger.debug(f"assembly {assembly_identifier} packaged")
+    _logger.debug(f"assembly {assembly_identifier} packaged: version_id={object_properties['VersionId']}")
