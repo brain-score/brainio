@@ -268,6 +268,8 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
         object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
         lookup_type=TYPE_ASSEMBLY,
         bucket_name=bucket_name, sha1=netcdf_kf_sha1,
-        s3_key=s3_key, cls=assembly_class_name
+        s3_key=s3_key, cls=assembly_class_name,
     )
-    _logger.debug(f"assembly {assembly_identifier} packaged: version_id={object_properties['VersionId']}")
+    _logger.debug(f"assembly {assembly_identifier} packaged: sha1={netcdf_kf_sha1}" +
+                  # log version_id if it's there (not all buckets are versioned)
+                  (f", version_id={object_properties['VersionId']}" if 'VersionId' in object_properties else ""))
