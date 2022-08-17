@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 import brainio.assemblies as assemblies
 import brainio.stimuli as stimuli
-from brainio.stimuli import StimulusSetLoader
 from brainio.lookup import lookup_assembly, lookup_stimulus_set, sha1_hash
+from brainio.stimuli import StimulusSetLoader
 
 BRAINIO_HOME = 'BRAINIO_HOME'
 
@@ -50,7 +50,7 @@ class Fetcher(object):
 class BotoFetcher(Fetcher):
     """A Fetcher that retrieves files from Amazon Web Services' S3 data storage.  """
 
-    def __init__(self, location, local_filename):
+    def __init__(self, location, local_filename, version_id=None):
         super(BotoFetcher, self).__init__(location, local_filename)
         parsed_url = urlparse(self.location)
         split_path = parsed_url.path.lstrip('/').split("/")
@@ -62,6 +62,7 @@ class BotoFetcher(Fetcher):
         else:
             self.bucketname = split_path[0]
             self.relative_path = os.path.join(*(split_path[1:]))
+        self.extra_args = {"VersionId": version_id} if version_id else None
         self.output_filename = os.path.join(self.local_dir_path, self.relative_path)
         self._logger = logging.getLogger(fullname(self))
 
@@ -97,7 +98,7 @@ class BotoFetcher(Fetcher):
                 if bytes_amount > 0:  # at the end, this sometimes passes a negative byte amount which tqdm can't handle
                     progress_bar.update(bytes_amount)
 
-            obj.download_file(self.output_filename, Callback=progress_hook)
+            obj.download_file(self.output_filename, ExtraArgs=self.extra_args, Callback=progress_hook)
 
 
 def verify_sha1(filepath, sha1):
@@ -112,14 +113,14 @@ _fetcher_types = {
 }
 
 
-def get_fetcher(type="S3", location=None, local_filename=None):
-    return _fetcher_types[type](location, local_filename)
+def get_fetcher(type="S3", location=None, local_filename=None, version_id=None):
+    return _fetcher_types[type](location, local_filename, version_id=version_id)
 
 
-def fetch_file(location_type, location, sha1):
+def fetch_file(location_type, location, sha1, version_id=None):
     filename = filename_from_link(location)
     fetcher = get_fetcher(type=location_type, location=location,
-                          local_filename=filename)
+                          local_filename=filename, version_id=version_id)
     local_path = fetcher.fetch()
     verify_sha1(local_path, sha1)
     return local_path
@@ -154,7 +155,7 @@ def resolve_stimulus_set_class(class_name):
 def get_assembly(identifier):
     assembly_lookup = lookup_assembly(identifier)
     file_path = fetch_file(location_type=assembly_lookup['location_type'],
-                            location=assembly_lookup['location'], sha1=assembly_lookup['sha1'])
+                           location=assembly_lookup['location'], sha1=assembly_lookup['sha1'])
     stimulus_set = get_stimulus_set(assembly_lookup['stimulus_set_identifier'])
     cls = resolve_assembly_class(assembly_lookup['class'])
     loader = cls.get_loader_class()(
