@@ -12,10 +12,10 @@ requirements = [
     "tqdm",
     "Pillow",
     "entrypoints",
-    "numpy>=1.16.5, !=1.21.*",
-    "pandas>=1.2.0, !=1.3.0",
-    "xarray==0.17.0",
-    "netcdf4==1.5.8",
+    "numpy",
+    "pandas",
+    "xarray",  # 2022.6 import fails with `AttributeError: module 'dask.array' has no attribute 'lib'`
+    "netcdf4",
 ]
 
 setup(
