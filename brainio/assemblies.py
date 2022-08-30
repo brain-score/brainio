@@ -415,7 +415,7 @@ class AssemblyLoader:
         names = list(get_metadata(assembly, dims=('presentation',), names_only=True))
         if 'image_id' in names and 'stimulus_id' not in names:
             assembly = assembly.assign_coords(
-                stimulus_id=('presentation', assembly['image_id']),
+                stimulus_id=('presentation', assembly['image_id'].data),
             )
         return assembly
 
