@@ -15,7 +15,7 @@ requirements = [
     "numpy",
     "pandas",
     "xarray",  # 2022.6 import fails with `AttributeError: module 'dask.array' has no attribute 'lib'`
-    "netcdf4",
+    "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175
 ]
 
 setup(
