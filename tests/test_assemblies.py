@@ -15,6 +15,47 @@ from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fast
     SpikeTimesAssembly, get_metadata
 
 
+def test_get_metadata():
+    # assembly, dims, names_only, include_coords, include_indexes, include_multi_indexes, include_levels
+    assy = DataAssembly(
+        data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
+        coords={
+            'up': ("a", ['alpha', 'alpha', 'beta', 'beta', 'beta', 'beta']),
+            'down': ("a", [1, 1, 1, 1, 2, 2]),
+            'why': ("a", ['yes', 'yes', 'yes', 'yes', 'yes', 'no']),
+            'b': ('b', ['x', 'y', 'z']),
+        },
+        dims=['a', 'b']
+    )
+    assy = assy.reset_index('why')
+    assert set(get_metadata(assy, None, True, True, True, True, True)) == {'a', 'up', 'down', 'why', 'b'}
+    assert set(get_metadata(assy, None, True, True, True, True, False)) == {'a', 'why', 'b'}
+    assert set(get_metadata(assy, None, True, True, True, False, True)) == {'up', 'down', 'why', 'b'}
+    assert set(get_metadata(assy, None, True, True, True, False, False)) == {'why', 'b'}
+    assert set(get_metadata(assy, None, True, True, False, True, True)) == {'a', 'up', 'down', 'why'}
+    assert set(get_metadata(assy, None, True, True, False, True, False)) == {'a', 'why'}
+    assert set(get_metadata(assy, None, True, True, False, False, True)) == {'up', 'down', 'why'}
+    assert set(get_metadata(assy, None, True, True, False, False, False)) == {'why'}
+    assert set(get_metadata(assy, None, True, False, True, True, True)) == {'a', 'up', 'down', 'b'}
+    assert set(get_metadata(assy, None, True, False, True, True, False)) == {'a', 'b'}
+    assert set(get_metadata(assy, None, True, False, True, False, True)) == {'up', 'down', 'b'}
+    assert set(get_metadata(assy, None, True, False, True, False, False)) == {'b'}
+    assert set(get_metadata(assy, None, True, False, False, True, True)) == {'a', 'up', 'down'}
+    assert set(get_metadata(assy, None, True, False, False, True, False)) == {'a'}
+    assert set(get_metadata(assy, None, True, False, False, False, True)) == {'up', 'down'}
+    assert set(get_metadata(assy, None, True, False, False, False, False)) == set()
+
+    a = make_proto_assembly()
+    md_all = list(get_metadata(a))
+    assert len(md_all) == 4
+    md_coo = list(get_metadata(a, include_indexes=False, include_levels=False))
+    assert len(md_coo) == 0
+    md_ind = list(get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
+    assert len(md_ind) == 2
+    md_lev = list(get_metadata(a, include_coords=False, include_indexes=False))
+    assert len(md_lev) == 4
+
+
 def test_get_levels():
     assy = DataAssembly(
         data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
@@ -40,12 +81,11 @@ class TestSubclassing:
             dims=['a', 'b']
         )
         assert "up" in da.coords
-        assert da["a"].variable.level_names is None
+        assert "a" not in da.indexes
         da = gather_indexes(da)
-        assert da.coords.variables["a"].level_names == ["up", "down"]
-        assert da["a"].variable.level_names == ["up", "down"]
+        assert da.indexes["a"].names == ["up", "down"]
         da = DataArray(da)
-        assert da.coords.variables["a"].level_names == ["up", "down"]
+        assert da.indexes["a"].names == ["up", "down"]
         assert da["up"] is not None
 
     def test_wrap_dataassembly(self):
@@ -58,11 +98,9 @@ class TestSubclassing:
             },
             dims=['a', 'b']
         )
-        assert assy.coords.variables["a"].level_names == ["up", "down"]
-        assert assy["a"].variable.level_names == ["up", "down"]
+        assert assy.indexes["a"].names == ["up", "down"]
         da = DataArray(assy)
-        assert da.coords.variables["a"].level_names == ["up", "down"]
-        assert da["a"].variable.level_names == ["up", "down"]
+        assert assy.indexes["a"].names == ["up", "down"]
         assert da["up"] is not None
 
     def test_reset_index(self):
@@ -109,6 +147,7 @@ class TestSubclassing:
         )
         single = assy[0, 0]
         assert type(single) is type(assy)
+        assert single == 1
 
     def test_is_fastpath(self):
         """In DataAssembly.__init__ we have to check whether fastpath is present in a set of arguments and true
@@ -164,17 +203,14 @@ class TestSubclassing:
             dims=['a', 'b']
         )
         assert hasattr(da1, "up")
-        assert da1.coords.variables["a"].level_names == ["up", "down"]
-        assert da1["a"].variable.level_names == ["up", "down"]
+        assert da1.indexes["a"].names == ["up", "down"]
         assert da1["up"] is not None
         aligned1, aligned2 = xr.align(da1, da2, join="outer")
         assert hasattr(aligned1, "up")
-        assert aligned1.coords.variables["a"].level_names == ["up", "down"]
-        assert aligned1["a"].variable.level_names == ["up", "down"]
+        assert aligned1.indexes["a"].names == ["up", "down"]
         assert aligned1["up"] is not None
         assert hasattr(aligned2, "up")
-        assert aligned2.coords.variables["a"].level_names == ["up", "down"]
-        assert aligned2["a"].variable.level_names == ["up", "down"]
+        assert aligned2.indexes["a"].names == ["up", "down"]
         assert aligned2["up"] is not None
 
 
@@ -452,15 +488,5 @@ class TestFromFiles:
         assert extra.shape == (40,)
 
 
-def test_get_metadata():
-    a = make_proto_assembly()
-    md_all = list(get_metadata(a))
-    assert len(md_all) == 4
-    md_coo = list(get_metadata(a, include_indexes=False, include_levels=False))
-    assert len(md_coo) == 0
-    md_ind = list(get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
-    assert len(md_ind) == 2
-    md_lev = list(get_metadata(a, include_coords=False, include_indexes=False))
-    assert len(md_lev) == 4
 
 
