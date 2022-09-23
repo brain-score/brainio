@@ -238,6 +238,60 @@ class TestIndex:
             d.sel(coordB=0)
 
 
+class TestPlainGroupy:
+
+    def test_on_data_array(self):
+        xr.show_versions()
+        d = DataArray(
+            data=[
+                [0, 1, 2, 3, 4, 5, 6],
+                [7, 8, 9, 10, 11, 12, 13],
+                [14, 15, 16, 17, 18, 19, 20]
+            ],
+            coords={
+                "greek": ("a", ['alpha', 'beta', 'gamma']),
+                "colors": ("a", ['red', 'green', 'blue']),
+                "compass": ("b", ['north', 'south', 'east', 'west', 'northeast', 'southeast', 'southwest']),
+                "integer": ("b", [0, 1, 2, 3, 4, 5, 6]),
+            },
+            dims=("a", "b")
+        )
+        d = gather_indexes(d)
+        g = d.groupby('greek')
+        m = g.mean(...)
+        c = DataAssembly(
+            data=[3, 10, 17],
+            coords={'greek': ('greek', ['alpha', 'beta', 'gamma'])},
+            dims=['greek']
+        )
+        assert m.equals(c)
+
+    def test_on_data_assembly(self):
+        xr.show_versions()
+        d = DataAssembly(
+            data=[
+                [0, 1, 2, 3, 4, 5, 6],
+                [7, 8, 9, 10, 11, 12, 13],
+                [14, 15, 16, 17, 18, 19, 20]
+            ],
+            coords={
+                "greek": ("a", ['alpha', 'beta', 'gamma']),
+                "colors": ("a", ['red', 'green', 'blue']),
+                "compass": ("b", ['north', 'south', 'east', 'west', 'northeast', 'southeast', 'southwest']),
+                "integer": ("b", [0, 1, 2, 3, 4, 5, 6]),
+            },
+            dims=("a", "b")
+        )
+        g = d.groupby('greek')
+        m = g.mean(...)
+        c = DataAssembly(
+            data=[3, 10, 17],
+            coords={'greek': ('greek', ['alpha', 'beta', 'gamma'])},
+            dims=['greek']
+        )
+        assert m.equals(c)
+
+
 class TestMultiGroupby:
     def test_single_dimension(self):
         d = DataAssembly([[1, 2, 3], [4, 5, 6]], coords={'a': ['a', 'b'], 'b': ['x', 'y', 'z']}, dims=['a', 'b'])
@@ -264,13 +318,14 @@ class TestMultiGroupby:
             },
             dims=("a", "b")
         )
-        g = d.multi_groupby(['greek']).mean(...)
+        g = d.multi_groupby(['greek'])
+        m = g.mean(...)
         c = DataAssembly(
             data=[3, 10, 17],
             coords={'greek': ('greek', ['alpha', 'beta', 'gamma'])},
             dims=['greek']
         )
-        assert g.equals(c)
+        assert m.equals(c)
 
     def test_single_dim_multi_coord(self):
         d = DataAssembly([1, 2, 3, 4, 5, 6],
