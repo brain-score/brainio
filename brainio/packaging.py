@@ -208,7 +208,7 @@ def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compres
     mode = "a" if append else "w"
     target_netcdf_file.parent.mkdir(parents=True, exist_ok=True)
     if compress:
-        ds = assembly.to_dataset(name="data")
+        ds = assembly.to_dataset(name="data", promote_attrs=True)
         compression = dict(zlib=True, complevel=1)
         encoding = {var: compression for var in ds.variables}
         ds.to_netcdf(target_netcdf_file, mode=mode, group=group, encoding=encoding)
