@@ -14,8 +14,8 @@ requirements = [
     "entrypoints",
     "numpy",
     "pandas",
-    "xarray",  # 2022.6 import fails with `AttributeError: module 'dask.array' has no attribute 'lib'`
-    "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175
+    "xarray!=2022.06.0",  # 2022.06.0 has a bug which breaks BrainIO:  https://github.com/pydata/xarray/issues/6836
+    "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175,
 ]
 
 setup(
