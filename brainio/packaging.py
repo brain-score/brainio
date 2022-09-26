@@ -210,7 +210,7 @@ def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compres
     if compress:
         ds = assembly.to_dataset(name="data", promote_attrs=True)
         compression = dict(zlib=True, complevel=1)
-        encoding = {var: compression for var in ds.variables}
+        encoding = {var: compression for var in ds.data_vars}
         ds.to_netcdf(target_netcdf_file, mode=mode, group=group, encoding=encoding)
     else:
         assembly.to_netcdf(target_netcdf_file, mode=mode, group=group)
