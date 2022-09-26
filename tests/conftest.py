@@ -55,11 +55,8 @@ def make_proto_assembly():
 
 
 def scattered_floats(lo, hi, num):
-    # a kludge:  looks stochastic, but deterministic
-    mid = (hi + lo) / 2
-    half = mid - lo
-    jump = 8
-    return [mid + np.sin(x) * half for x in range(2, num * (jump + 1), jump)][:num]
+    rng = np.random.default_rng(12345)
+    return rng.random(num) * (hi - lo) + lo
 
 
 # taken from values in /braintree/data2/active/users/sachis/projects/oasis900/monkeys/oleo/mworksproc/oleo_oasis900_210216_113846_mwk.csv
@@ -90,23 +87,25 @@ def make_meta_assembly():
     return a
 
 
-def make_spk_assembly():
+def make_spk_assembly(magnitude=3):
+    size = 10**magnitude
+    half = int((10**magnitude) / 2)
     coords = {
-        "neuroid_id": ("event", ["A-019", "D-009"]*500),
-        "project": ("event", ["test"]*1000),
-        "datetime": ("event", np.repeat(np.datetime64('2021-02-16T11:41:55.000000000'), 1000)),
-        "animal": ("event", ["testo"]*1000),
-        "hemisphere": ("event", ["L", "R"]*500),
-        "region": ("event", ["V4", "IT"]*500),
-        "subregion": ("event", ["V4", "aIT"]*500),
-        "array": ("event", ["6250-002416", "4865-233455"]*500),
-        "bank": ("event", ["A", "D"]*500),
-        "electrode": ("event", ["019", "009"]*500),
-        "column": ("event", [5, 2]*500),
-        "row": ("event", [4, 8]*500),
-        "label": ("event", ["elec46", "elec123"]*500),
+        "neuroid_id": ("event", ["A-019", "D-009"]*half),
+        "project": ("event", ["test"]*size),
+        "datetime": ("event", np.repeat(np.datetime64('2021-02-16T11:41:55.000000000'), size)),
+        "animal": ("event", ["testo"]*size),
+        "hemisphere": ("event", ["L", "R"]*half),
+        "region": ("event", ["V4", "IT"]*half),
+        "subregion": ("event", ["V4", "aIT"]*half),
+        "array": ("event", ["6250-002416", "4865-233455"]*half),
+        "bank": ("event", ["A", "D"]*half),
+        "electrode": ("event", ["019", "009"]*half),
+        "column": ("event", [5, 2]*half),
+        "row": ("event", [4, 8]*half),
+        "label": ("event", ["elec46", "elec123"]*half),
     }
-    data = sorted(scattered_floats(67.7, 21116.2, 1000))
+    data = sorted(scattered_floats(67.7, 21116.2, size))
     a = SpikeTimesAssembly(
         data=data,
         coords=coords,

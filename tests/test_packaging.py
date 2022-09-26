@@ -176,9 +176,9 @@ def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, b
 
 
 def test_compression(test_write_netcdf_path):
-    write_netcdf(make_spk_assembly(), test_write_netcdf_path, compress=False)
+    write_netcdf(make_spk_assembly(6), test_write_netcdf_path, compress=False)
     uncompressed = test_write_netcdf_path.stat().st_size
-    write_netcdf(make_spk_assembly(), test_write_netcdf_path, compress=True)
+    write_netcdf(make_spk_assembly(6), test_write_netcdf_path, compress=True)
     compressed = test_write_netcdf_path.stat().st_size
     assert uncompressed > compressed
 
