@@ -259,7 +259,7 @@ class TestPlainGroupy:
         d = gather_indexes(d)
         g = d.groupby('greek')
         m = g.mean(...)
-        c = DataAssembly(
+        c = DataArray(
             data=[3, 10, 17],
             coords={'greek': ('greek', ['alpha', 'beta', 'gamma'])},
             dims=['greek']
