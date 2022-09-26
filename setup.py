@@ -20,7 +20,7 @@ requirements = [
 
 setup(
     name='brainio',
-    version='0.1.0',
+    version='0.2.0',
     description="Data management for quantitative comparison of brains and brain-inspired systems",
     long_description=readme,
     author="Jon Prescott-Roy, Martin Schrimpf",
