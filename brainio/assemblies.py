@@ -328,7 +328,41 @@ def array_is_element(arr, element):
     return len(arr) == 1 and arr[0] == element
 
 
-def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
+def get_metadata_before_2022_06(assembly, dims=None, names_only=False, include_coords=True,
+                                include_indexes=True, include_multi_indexes=False, include_levels=True):
+    """
+    Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
+    """
+    def what(name, dims, values, names_only):
+        if names_only:
+            return name
+        else:
+            return name, dims, values
+    if dims is None:
+        dims = assembly.dims + (None,) # all dims plus dimensionless coords
+    for name in assembly.coords.variables:
+        values = assembly.coords.variables[name]
+        is_subset = values.dims and (set(values.dims) <= set(dims))
+        is_dimless = (not values.dims) and None in dims
+        if is_subset or is_dimless:
+            is_index = isinstance(values, IndexVariable)
+            if is_index:
+                if values.level_names: # it's a MultiIndex
+                    if include_multi_indexes:
+                        yield what(name, values.dims, values.values, names_only)
+                    if include_levels:
+                        for level in values.level_names:
+                            level_values = assembly.coords[level]
+                            yield what(level, level_values.dims, level_values.values, names_only)
+                else: # it's an Index
+                    if include_indexes:
+                        yield what(name, values.dims, values.values, names_only)
+            else:
+                if include_coords:
+                    yield what(name, values.dims, values.values, names_only)
+
+
+def get_metadata_after_2022_06(assembly, dims=None, names_only=False, include_coords=True,
                  include_indexes=True, include_multi_indexes=False, include_levels=True):
     """
     Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
@@ -359,6 +393,17 @@ def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
             else:  # it's a coord
                 if include_coords:
                     yield what(name, values.dims, values.values, names_only)
+
+
+def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
+                 include_indexes=True, include_multi_indexes=False, include_levels=True):
+    try:
+        xr.DataArray().stack(create_index=True)
+        yield from get_metadata_after_2022_06(assembly, dims, names_only, include_coords,
+                                              include_indexes, include_multi_indexes, include_levels)
+    except TypeError as e:
+        yield from get_metadata_before_2022_06(assembly, dims, names_only, include_coords,
+                                              include_indexes, include_multi_indexes, include_levels)
 
 
 def coords_for_dim(assembly, dim):

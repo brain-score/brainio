@@ -16,6 +16,7 @@ from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fast
 
 
 def test_get_metadata():
+    xr.show_versions()
     # assembly, dims, names_only, include_coords, include_indexes, include_multi_indexes, include_levels
     assy = DataAssembly(
         data=[[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
@@ -241,7 +242,6 @@ class TestIndex:
 class TestPlainGroupy:
 
     def test_on_data_array(self):
-        xr.show_versions()
         d = DataArray(
             data=[
                 [0, 1, 2, 3, 4, 5, 6],
@@ -258,6 +258,8 @@ class TestPlainGroupy:
         )
         d = gather_indexes(d)
         g = d.groupby('greek')
+        # with xarray==2022.06.0, the following line fails with:
+        # ValueError: conflicting multi-index level name 'greek' with dimension 'greek'
         m = g.mean(...)
         c = DataArray(
             data=[3, 10, 17],
@@ -267,7 +269,6 @@ class TestPlainGroupy:
         assert m.equals(c)
 
     def test_on_data_assembly(self):
-        xr.show_versions()
         d = DataAssembly(
             data=[
                 [0, 1, 2, 3, 4, 5, 6],
