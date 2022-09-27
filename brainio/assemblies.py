@@ -328,8 +328,8 @@ def array_is_element(arr, element):
     return len(arr) == 1 and arr[0] == element
 
 
-def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
-                 include_indexes=True, include_multi_indexes=False, include_levels=True):
+def get_metadata_before_2022_06(assembly, dims=None, names_only=False, include_coords=True,
+                                include_indexes=True, include_multi_indexes=False, include_levels=True):
     """
     Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
     """
@@ -360,6 +360,50 @@ def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
             else:
                 if include_coords:
                     yield what(name, values.dims, values.values, names_only)
+
+
+def get_metadata_after_2022_06(assembly, dims=None, names_only=False, include_coords=True,
+                 include_indexes=True, include_multi_indexes=False, include_levels=True):
+    """
+    Return coords and/or indexes or index levels from an assembly, yielding either `name` or `(name, dims, values)`.
+    """
+    def what(name, dims, values, names_only):
+        if names_only:
+            return name
+        else:
+            return name, dims, values
+    if dims is None:
+        dims = assembly.dims + (None,) # all dims plus dimensionless coords
+    for name, values in assembly.coords.items():
+        none_but_keep = (not values.dims) and None in dims
+        shared = not (set(values.dims).isdisjoint(set(dims)))
+        if none_but_keep or shared:
+            if name in assembly.indexes:  # it's an index
+                index = assembly.indexes[name]
+                if len(index.names) > 1:  # it's a MultiIndex or level
+                    if name in index.names:  # it's a level
+                        if include_levels:
+                            yield what(name, values.dims, values.values, names_only)
+                    else:  # it's a MultiIndex
+                        if include_multi_indexes:
+                            yield what(name, values.dims, values.values, names_only)
+                else:  # it's a single Index
+                    if include_indexes:
+                        yield what(name, values.dims, values.values, names_only)
+            else:  # it's a coord
+                if include_coords:
+                    yield what(name, values.dims, values.values, names_only)
+
+
+def get_metadata(assembly, dims=None, names_only=False, include_coords=True,
+                 include_indexes=True, include_multi_indexes=False, include_levels=True):
+    try:
+        xr.DataArray().stack(create_index=True)
+        yield from get_metadata_after_2022_06(assembly, dims, names_only, include_coords,
+                                              include_indexes, include_multi_indexes, include_levels)
+    except TypeError as e:
+        yield from get_metadata_before_2022_06(assembly, dims, names_only, include_coords,
+                                              include_indexes, include_multi_indexes, include_levels)
 
 
 def coords_for_dim(assembly, dim):
@@ -415,7 +459,7 @@ class AssemblyLoader:
         names = list(get_metadata(assembly, dims=('presentation',), names_only=True))
         if 'image_id' in names and 'stimulus_id' not in names:
             assembly = assembly.assign_coords(
-                stimulus_id=('presentation', assembly['image_id']),
+                stimulus_id=('presentation', assembly['image_id'].data),
             )
         return assembly
 

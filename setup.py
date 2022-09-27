@@ -12,15 +12,15 @@ requirements = [
     "tqdm",
     "Pillow",
     "entrypoints",
-    "numpy>=1.16.5, !=1.21.*",
-    "pandas>=1.2.0, !=1.3.0",
-    "xarray==0.17.0",
-    "netcdf4==1.5.8",
+    "numpy",
+    "pandas",
+    "xarray!=2022.06.0",  # 2022.06.0 has a bug which breaks BrainIO:  https://github.com/pydata/xarray/issues/6836
+    "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175,
 ]
 
 setup(
     name='brainio',
-    version='0.1.0',
+    version='0.2.0',
     description="Data management for quantitative comparison of brains and brain-inspired systems",
     long_description=readme,
     author="Jon Prescott-Roy, Martin Schrimpf",
