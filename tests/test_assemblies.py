@@ -12,7 +12,7 @@ import brainio
 from brainio import assemblies
 from brainio import fetch
 from brainio.assemblies import DataAssembly, get_levels, gather_indexes, is_fastpath, MetadataAssembly, \
-    SpikeTimesAssembly, get_metadata
+    SpikeTimesAssembly, get_metadata, BRAINIO_CHUNKS
 
 
 def test_get_metadata():
@@ -437,6 +437,18 @@ def test_load(brainio_home):
     assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
     assert assy_hvm.shape == (256, 148480, 1)
     print(assy_hvm)
+
+
+class TestDask:
+    def test_dask(self, brainio_home):
+        assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
+        assert assy_hvm.chunks is not None
+
+    def test_dask_override(self, brainio_home, monkeypatch):
+        with monkeypatch.context() as patch:
+            patch.setenv(BRAINIO_CHUNKS, 'None')
+            assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
+        assert assy_hvm.chunks is None
 
 
 def test_repr(brainio_home_session):
