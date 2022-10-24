@@ -442,7 +442,11 @@ def test_load(brainio_home):
 class TestDask:
     def test_dask(self, brainio_home):
         assy_hvm = brainio.get_assembly(identifier="dicarlo.MajajHong2015.public")
-        assert assy_hvm.chunks is not None
+        try:
+            import dask
+            assert assy_hvm.chunks is not None
+        except ModuleNotFoundError as e:
+            assert assy_hvm.chunks is None
 
     def test_dask_override(self, brainio_home, monkeypatch):
         with monkeypatch.context() as patch:

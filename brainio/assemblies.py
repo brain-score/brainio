@@ -457,7 +457,11 @@ class AssemblyLoader:
 
     def load(self):
         chunks = literal_eval(os.getenv(BRAINIO_CHUNKS, '{}'))
-        result = xr.open_dataarray(self.file_path, group=self.group, chunks=chunks)
+        try:
+            import dask
+            result = xr.open_dataarray(self.file_path, group=self.group, chunks=chunks)
+        except ModuleNotFoundError as e:
+            result = xr.open_dataarray(self.file_path, group=self.group)
         result = self.correct_stimulus_id_name(result)
         result = self.assembly_class(data=result)
         return result
