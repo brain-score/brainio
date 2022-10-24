@@ -15,8 +15,9 @@ requirements = [
     "numpy",
     "pandas",
     "xarray!=2022.6.0,!=2022.9.0,!=2022.10.0",  # 6-10 have a groupby bug: https://github.com/pydata/xarray/issues/6836
+    "xarray==0.17.0;python_version<='3.7'"
     "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175,
-    "dask;python_version>'3.7'",
+    "dask",
 ]
 
 setup(
