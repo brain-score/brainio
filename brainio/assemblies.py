@@ -1,4 +1,6 @@
 import logging
+import os
+from ast import literal_eval
 from collections import OrderedDict, defaultdict
 
 import itertools
@@ -8,6 +10,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray import DataArray, IndexVariable
+
+BRAINIO_CHUNKS = 'BRAINIO_CHUNKS'
 
 _logger = logging.getLogger(__name__)
 
@@ -434,7 +438,10 @@ def gather_indexes(assembly):
         if coord_names:
             coords_d[dim] = coord_names
     if coords_d:
+        identifier = assembly.attrs.get('identifier', 'assembly')
+        _logger.debug(f'BEGIN set_index on {identifier}')
         assembly = assembly.set_index(append=True, **coords_d)
+        _logger.debug(f'END   set_index on {identifier}')
     return assembly
 
 
@@ -449,7 +456,12 @@ class AssemblyLoader:
         self.group = group
 
     def load(self):
-        result = xr.open_dataarray(self.file_path, group=self.group)
+        chunks = literal_eval(os.getenv(BRAINIO_CHUNKS, '{}'))
+        try:
+            import dask
+            result = xr.open_dataarray(self.file_path, group=self.group, chunks=chunks)
+        except ModuleNotFoundError as e:
+            result = xr.open_dataarray(self.file_path, group=self.group)
         result = self.correct_stimulus_id_name(result)
         result = self.assembly_class(data=result)
         return result

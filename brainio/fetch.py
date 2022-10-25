@@ -73,7 +73,6 @@ class BotoFetcher(Fetcher):
 
     def download_boto(self):
         """Downloads file from S3 via boto at `url` and writes it in `self.output_filename`."""
-        self._logger.info('downloading %s' % self.relative_path)
         try:  # try with authentication
             self._logger.debug("attempting default download (signed)")
             self.download_boto_config(config=None)
@@ -98,7 +97,9 @@ class BotoFetcher(Fetcher):
                 if bytes_amount > 0:  # at the end, this sometimes passes a negative byte amount which tqdm can't handle
                     progress_bar.update(bytes_amount)
 
+            self._logger.debug(f'BEGIN download_file {self.relative_path} to {self.output_filename}')
             obj.download_file(self.output_filename, ExtraArgs=self.extra_args, Callback=progress_hook)
+            self._logger.debug(f'END   download_file {self.relative_path} to {self.output_filename}')
 
 
 def verify_sha1(filepath, sha1):

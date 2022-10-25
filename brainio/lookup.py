@@ -171,10 +171,12 @@ def _is_zip_lookup(data_row):
 
 
 def sha1_hash(path, buffer_size=64 * 2 ** 10):
+    _logger.debug(f'BEGIN sha1_hash on {path}')
     sha1 = hashlib.sha1()
     with open(path, "rb") as f:
         buffer = f.read(buffer_size)
         while len(buffer) > 0:
             sha1.update(buffer)
             buffer = f.read(buffer_size)
+    _logger.debug(f'END   sha1_hash on {path}')
     return sha1.hexdigest()
