@@ -256,7 +256,7 @@ class TestPlainGroupy:
             },
             dims=("a", "b")
         )
-        d = gather_indexes(d)
+        d = d.set_index(a=['greek', 'colors'], b=['compass', 'integer'])
         g = d.groupby('greek')
         # with xarray==2022.06.0, the following line fails with:
         # ValueError: conflicting multi-index level name 'greek' with dimension 'greek'
