@@ -14,7 +14,7 @@ requirements = [
     "entrypoints",
     "numpy",
     "pandas",
-    "xarray!=2022.6.0,!=2022.9.0,!=2022.10.0,!=2022.11",  # 6-11 have a groupby bug:
+    "xarray",  # 6-11 have a groupby bug:
     # https://github.com/pydata/xarray/issues/6836
     "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175,
 ]
