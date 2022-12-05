@@ -438,10 +438,7 @@ def gather_indexes(assembly):
         if coord_names:
             coords_d[dim] = coord_names
     if coords_d:
-        identifier = assembly.attrs.get('identifier', 'assembly')
-        _logger.debug(f'BEGIN set_index on {identifier}')
         assembly = assembly.set_index(append=True, **coords_d)
-        _logger.debug(f'END   set_index on {identifier}')
     return assembly
 
 
