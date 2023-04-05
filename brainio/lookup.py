@@ -152,7 +152,8 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
                     f"Trying to add duplicate identifier {object_lookup['identifier']}, existing {duplicates}")
     # append and save
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
-    catalog = catalog.append(add_lookup)
+    # catalog = catalog.append(add_lookup)
+    catalog = pd.concat((catalog, add_lookup))
     catalog.to_csv(catalog_path, index=False)
     _catalogs[catalog_identifier] = catalog
     return catalog
