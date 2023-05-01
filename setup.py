@@ -13,7 +13,7 @@ requirements = [
     "Pillow",
     "entrypoints",
     "numpy",
-    "pandas",
+    "pandas<2",
     "xarray<2022.6",  # groupby bug was introduced in index refactor: https://github.com/pydata/xarray/issues/6836
     "netcdf4!=1.6.0",  # https://github.com/Unidata/netcdf4-python/issues/1175,
 ]
