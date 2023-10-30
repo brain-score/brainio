@@ -1,10 +1,10 @@
 import hashlib
 import logging
-from pathlib import Path
 
 import entrypoints
 import numpy as np
 import pandas as pd
+
 from brainio.catalogs import Catalog, SOURCE_CATALOG
 
 ENTRYPOINT = "brainio_lookups"
@@ -123,7 +123,7 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
            bucket_name, sha1, s3_key, stimulus_set_identifier=None):
     catalogs = get_catalogs()
     catalog = catalogs[catalog_identifier]
-    catalog_path = catalog.source_path
+    catalog_path = catalog.attrs['source_path']
     _logger.debug(f"Adding {lookup_type} {object_identifier} to catalog {catalog_identifier}")
     object_lookup = {
         'identifier': object_identifier,
@@ -137,7 +137,7 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
     # check duplicates
     assert object_lookup['lookup_type'] in [TYPE_ASSEMBLY, TYPE_STIMULUS_SET]
     duplicates = catalog[(catalog['identifier'] == object_lookup['identifier']) &
-                           (catalog['lookup_type'] == object_lookup['lookup_type'])]
+                         (catalog['lookup_type'] == object_lookup['lookup_type'])]
     if len(duplicates) > 0:
         if object_lookup['lookup_type'] == TYPE_ASSEMBLY:
             raise ValueError(f"Trying to add duplicate identifier {object_lookup['identifier']}, "
@@ -152,7 +152,8 @@ def append(catalog_identifier, object_identifier, cls, lookup_type,
                     f"Trying to add duplicate identifier {object_lookup['identifier']}, existing {duplicates}")
     # append and save
     add_lookup = pd.DataFrame({key: [value] for key, value in object_lookup.items()})
-    catalog = catalog.append(add_lookup)
+    catalog = pd.concat((catalog, add_lookup))
+    catalog.attrs['source_path'] = catalog_path  # explicitly set since concat does not always preserve
     catalog.to_csv(catalog_path, index=False)
     _catalogs[catalog_identifier] = catalog
     return catalog
