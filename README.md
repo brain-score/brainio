@@ -1,5 +1,5 @@
 # BrainIO
-[![Build Status](https://travis-ci.com/brain-score/brainio.svg?branch=main)](https://travis-ci.com/brain-score/brainio)
+[![Build Status](https://travis-ci.com/brain-score/brainio.svg?branch=main)](https://app.travis-ci.com/brain-score/brainio)
 
 # What is BrainIO?
 BrainIO is a framework for standardizing the exchange of data between 
