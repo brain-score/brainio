@@ -64,7 +64,8 @@ def test_stimulus_numbers():
     stimulus_set = StimulusSet(DataFrame({'stimulus_id': [0, 1]}))
     filenames = ['Nat300_1.png', 'Nat300_2.png']
     assert len(stimulus_set) == len(filenames)
-    stimulus_set.stimulus_paths = {stimulus_set.at[idx, 'stimulus_id']: filenames[idx] for idx in range(len(stimulus_set))}
+    stimulus_set.stimulus_paths = {stimulus_set.at[idx, 'stimulus_id']: filenames[idx]
+                                   for idx in range(len(stimulus_set))}
 
     check_stimulus_numbers(stimulus_set)
 
@@ -103,7 +104,8 @@ def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_fi
 def test_package_stimulus_set(test_stimulus_set_identifier, test_catalog_identifier, brainio_home, restore_this_file,
                               restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}'
+                                   for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -124,7 +126,8 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
     assert 'lookup_source' not in catalog
     assert 'source_catalog' not in catalog
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}'
+                                   for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
@@ -142,7 +145,8 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
         dims=['presentation', 'neuroid', 'time_bin']
     )
     identifier = "test.package_assembly"
-    package_data_assembly(test_catalog_identifier, assy, identifier, test_stimulus_set_identifier, "DataAssembly", "brainio-temp")
+    package_data_assembly(
+        test_catalog_identifier, assy, identifier, test_stimulus_set_identifier, "DataAssembly", "brainio-temp")
     assert identifier in lookup.list_assemblies()
     gotten = brainio.get_assembly(identifier)
     assert gotten is not None
@@ -156,7 +160,8 @@ def test_package_data_assembly(test_stimulus_set_identifier, test_catalog_identi
 def test_package_extras(test_stimulus_set_identifier, test_catalog_identifier, brainio_home,
                         restore_catalog):
     stimulus_set = StimulusSet(make_stimulus_set_df())
-    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}' for _, row in stimulus_set.iterrows()}
+    stimulus_set.stimulus_paths = {row["stimulus_id"]: Path(__file__).parent / f'images/{row["filename"]}'
+                                   for _, row in stimulus_set.iterrows()}
     del stimulus_set["filename"]
     identifier = test_stimulus_set_identifier
     restore_catalog(test_catalog_identifier)
