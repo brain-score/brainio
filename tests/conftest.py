@@ -211,7 +211,7 @@ def restore_catalog(restore_this_file):
     tmp_paths = {}
     def f(catalog_identifier, tmp_path=None):
         original_catalog = lookup.get_catalogs()[catalog_identifier]
-        restore_this_file(original_catalog.source_path)
+        restore_this_file(original_catalog.attrs['source_path'])
         original_catalogs[catalog_identifier] = original_catalog
         tmp_paths[catalog_identifier] = tmp_path
     yield f
@@ -219,7 +219,7 @@ def restore_catalog(restore_this_file):
     for identifier, original_catalog in original_catalogs.items():
         tmp_path = tmp_paths[identifier]
         if tmp_path:
-            current_path = current_catalogs[identifier].source_path
+            current_path = current_catalogs[identifier].attrs['source_path']
             target_path = tmp_path / current_path.name
             shutil.copy(current_path, target_path)
         current_catalogs[identifier] = original_catalog

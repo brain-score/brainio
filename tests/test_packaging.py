@@ -93,9 +93,10 @@ def test_append(test_catalog_identifier, test_write_netcdf_path, restore_this_fi
     identifier = "test.append"
     netcdf_sha1 = write_netcdf(assy, str(test_write_netcdf_path))
     catalog = lookup.get_catalogs()[test_catalog_identifier]
-    print(catalog.source_path)
-    restore_this_file(catalog.source_path)
-    catalog = lookup.append(test_catalog_identifier, identifier, "DataAssembly", TYPE_ASSEMBLY, "brainio-temp", netcdf_sha1, "assy_test_append.nc", "dicarlo.hvm")
+    print(catalog.attrs['source_path'])
+    restore_this_file(catalog.attrs['source_path'])
+    catalog = lookup.append(test_catalog_identifier, identifier, "DataAssembly", TYPE_ASSEMBLY, "brainio-temp",
+                            netcdf_sha1, "assy_test_append.nc", "dicarlo.hvm")
     assert identifier in list(catalog["identifier"])
     assert identifier in lookup.list_assemblies()
 
