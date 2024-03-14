@@ -164,8 +164,8 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     proto_stimulus_set['filename'] = zip_filenames  # keep record of zip (or later local) filenames
     csv_sha1 = create_stimulus_csv(proto_stimulus_set, str(target_csv_path))
     # upload both to S3
-    upload_to_s3(str(target_csv_path), bucket_name, target_s3_key=csv_file_name)
-    upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
+    csv_object_properties = upload_to_s3(str(target_csv_path), bucket_name, target_s3_key=csv_file_name)
+    zip_object_properties = upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
     # link to csv and zip from same identifier. The csv however is the only one of the two rows with a class.
 
     if catalog_name is not None:
@@ -183,7 +183,12 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
             bucket_name=bucket_name, sha1=stimulus_zip_sha1, s3_key=zip_file_name,
             stimulus_set_identifier=None
         )
+    csv_version_id = f"{csv_object_properties['VersionId']}" if 'VersionId' in csv_object_properties else ""
+    zip_version_id = f"{zip_object_properties['VersionId']}" if 'VersionId' in zip_object_properties else ""
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
+    return {"identifier": stimulus_set_identifier, "bucket": bucket_name, "csv_sha1": csv_sha1,
+            "zip_sha1": stimulus_zip_sha1, "csv_version_id": csv_version_id, "zip_version_id": zip_version_id}
+
 
 
 def write_netcdf(assembly, target_netcdf_file, append=False, group=None, compress=True):
@@ -272,6 +277,9 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
             bucket_name=bucket_name, sha1=netcdf_kf_sha1,
             s3_key=s3_key, cls=assembly_class_name,
         )
+    version_id = f"{object_properties['VersionId']}" if 'VersionId' in object_properties else ""
     _logger.debug(f"assembly {assembly_identifier} packaged: sha1={netcdf_kf_sha1}" +
                   # log version_id if it's there (not all buckets are versioned)
-                  (f", version_id={object_properties['VersionId']}" if 'VersionId' in object_properties else ""))
+                  f", version_id={version_id}")
+    return {"identifier": assembly_identifier, "version_id": version_id, "sha1": netcdf_kf_sha1,
+            "bucket": bucket_name, "cls": assembly_class_name}
