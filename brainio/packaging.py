@@ -183,9 +183,10 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
             bucket_name=bucket_name, sha1=stimulus_zip_sha1, s3_key=zip_file_name,
             stimulus_set_identifier=None
         )
-    csv_version_id = f"{csv_object_properties['VersionId']}" if 'VersionId' in csv_object_properties else ""
-    zip_version_id = f"{zip_object_properties['VersionId']}" if 'VersionId' in zip_object_properties else ""
-    _logger.debug(f"stimulus set {stimulus_set_identifier} packaged")
+    csv_version_id = csv_object_properties['VersionId'] if 'VersionId' in csv_object_properties else None
+    zip_version_id = zip_object_properties['VersionId'] if 'VersionId' in zip_object_properties else None
+    _logger.debug(f"stimulus set {stimulus_set_identifier} packaged:\n bucket={bucket_name}, csv_sha1={csv_sha1},"
+                  f"zip_sha1={stimulus_zip_sha1}, csv_version_id={csv_version_id}, zip_version_id={zip_version_id}")
     return {"identifier": stimulus_set_identifier, "bucket": bucket_name, "csv_sha1": csv_sha1,
             "zip_sha1": stimulus_zip_sha1, "csv_version_id": csv_version_id, "zip_version_id": zip_version_id}
 
@@ -277,9 +278,8 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
             bucket_name=bucket_name, sha1=netcdf_kf_sha1,
             s3_key=s3_key, cls=assembly_class_name,
         )
-    version_id = f"{object_properties['VersionId']}" if 'VersionId' in object_properties else ""
-    _logger.debug(f"assembly {assembly_identifier} packaged: sha1={netcdf_kf_sha1}" +
-                  # log version_id if it's there (not all buckets are versioned)
-                  f", version_id={version_id}")
+    version_id = object_properties['VersionId'] if 'VersionId' in object_properties else None
+    _logger.debug(f"assembly {assembly_identifier} packaged:\n, version_id={version_id}, sha1={netcdf_kf_sha1}, "
+                  f"bucket_name={bucket_name}, cls={assembly_class_name}")
     return {"identifier": assembly_identifier, "version_id": version_id, "sha1": netcdf_kf_sha1,
             "bucket": bucket_name, "cls": assembly_class_name}
