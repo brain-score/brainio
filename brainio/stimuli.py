@@ -9,7 +9,8 @@ _logger = logging.getLogger(__name__)
 
 class StimulusSet(pd.DataFrame):
     # http://pandas.pydata.org/pandas-docs/stable/development/extending.html#subclassing-pandas-data-structures
-    _metadata = pd.DataFrame._metadata + ["identifier", "get_stimulus", 'get_loader_class', "stimulus_paths", "from_files"]
+    _metadata = pd.DataFrame._metadata + ["identifier", "get_stimulus", "get_loader_class",
+                                          "stimulus_paths", "from_files", "placed_on_screen"]
 
     @property
     def _constructor(self):
