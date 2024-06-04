@@ -67,7 +67,7 @@ def test_get_levels():
         },
         dims=['a', 'b']
     )
-    assert get_levels(assy) == ["up", "down"]
+    assert get_levels(assy) == ["up", "down", "sideways"]
 
 
 class TestSubclassing:
@@ -115,7 +115,7 @@ class TestSubclassing:
             dims=['a', 'b']
         )
         da = DataArray(assy)
-        da = da.reset_index(["up", "down"])
+        da = da.reset_index(["up", "down", "sideways"])
         assert get_levels(da) == []
 
     def test_repr(self):
