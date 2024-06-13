@@ -56,10 +56,39 @@ def upload_to_s3(source_file_path: Union[Path, str], bucket_name: str, target_s3
                 progress_bar.update(bytes_amount)
 
         client = boto3.client('s3')
-        client.upload_file(str(source_file_path), bucket_name, target_s3_key, Callback=progress_hook)
-        # retrieve newly uploaded object's properties
-        object_properties: dict = client.head_object(Bucket=bucket_name, Key=target_s3_key)
-        return object_properties
+        sts_client = boto3.client('sts')
+        # Get the user's account ID and username
+        account_id, username = get_user_info(sts_client)
+        _logger.debug(f"Uploading as user {username} with account ID {account_id}")
+
+        try:
+            client.upload_file(str(source_file_path),
+                               bucket_name,
+                               target_s3_key,
+                               Callback=progress_hook,
+                               ExtraArgs={
+                                    'Tagging': f"uploadedBy={username}"
+                                    }
+                               )
+            # Retrieve newly uploaded object's properties
+            object_properties: dict = client.head_object(Bucket=bucket_name, Key=target_s3_key)
+            return object_properties
+        except Exception as e:
+            _logger.error(f"Error uploading file: {e}")
+            raise
+
+
+def get_user_info(sts_client):
+    # Get the account ID and username of the user
+    try:
+        user_identity = sts_client.get_caller_identity()
+        account_id = user_identity['Account']
+        user_arn = user_identity['Arn']
+        username = user_arn.split('/')[-1]
+        return account_id, username
+    except Exception as e:
+        _logger.error(f"Error retrieving user info: {e}")
+        raise
 
 
 def extract_specific(proto_stimulus_set):
