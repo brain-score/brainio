@@ -33,6 +33,8 @@ setup(
         "tests": [
             "pytest",
             "imageio",
+            "unittest",
+            "moto"
         ],
     },
     license="MIT license",

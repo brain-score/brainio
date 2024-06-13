@@ -1,6 +1,10 @@
 from pathlib import Path
+import os
 
 import pytest
+from unittest.mock import patch, MagicMock
+from moto import mock_aws
+import boto3
 
 import brainio
 from pandas import DataFrame
@@ -8,7 +12,7 @@ from pandas import DataFrame
 from brainio.assemblies import DataAssembly, get_levels
 from brainio.stimuli import StimulusSet
 from brainio.packaging import write_netcdf, check_stimulus_numbers, check_stimulus_naming_convention, TYPE_ASSEMBLY, \
-    package_stimulus_set, package_data_assembly
+    package_stimulus_set, package_data_assembly, get_user_info, upload_to_s3
 import brainio.lookup as lookup
 from tests.conftest import make_stimulus_set_df, make_spk_assembly, make_meta_assembly, BUCKET_NAME
 
@@ -188,4 +192,60 @@ def test_compression(test_write_netcdf_path):
     compressed = test_write_netcdf_path.stat().st_size
     assert uncompressed > compressed
 
+
+@mock_aws
+def test_get_user_info():
+    client = boto3.client('sts', region_name='us-east-1')
+
+    # mocking the get_caller_identity method on the client instance
+    with patch('brainio.packaging.boto3.client') as mock_boto_client:
+        mock_boto_client.return_value = client
+
+        with patch.object(client, 'get_caller_identity', return_value={
+            'Account': '123456789012',
+            'Arn': 'arn:aws:iam::123456789012:user/testuser',
+            'UserId': 'ABCDEFGHIJKLMNO:testuser'
+        }):
+            account_id, username = get_user_info(client)
+            assert account_id == '123456789012'
+            assert username == 'testuser'
+
+
+@mock_aws
+@patch('brainio.packaging.tqdm')
+@patch('os.path.getsize', return_value=1000)
+def test_upload_to_s3(mock_getsize, mock_tqdm):
+    # set up mocks
+    mock_tqdm_instance = MagicMock()
+    mock_tqdm.return_value = mock_tqdm_instance
+    s3_client = boto3.client('s3', region_name='us-east-1')
+    sts_client = boto3.client('sts', region_name='us-east-1')
+
+    # crreate test bucket and file
+    s3_client.create_bucket(Bucket='test-bucket')
+    source_file_path = Path('files/testfile.txt')
+    bucket_name = 'test-bucket'
+    target_s3_key = 'testfile.txt'
+    os.makedirs(source_file_path.parent, exist_ok=True)
+    with open(source_file_path, 'w') as f:
+        f.write("dummy content")
+
+    # mock STS response
+    with patch.object(sts_client, 'get_caller_identity', return_value={
+        'Account': '123456789012',
+        'Arn': 'arn:aws:iam::123456789012:user/testuser',
+        'UserId': 'ABCDEFGHIJKLMNO:testuser'
+    }):
+        # patch get_user_info to return the expected user
+        with patch('brainio.packaging.get_user_info', return_value=('123456789012', 'testuser')):
+            object_properties = upload_to_s3(source_file_path, bucket_name, target_s3_key)
+
+            # after upload, check that tagging worked
+            tag_set = s3_client.get_object_tagging(Bucket=bucket_name, Key=target_s3_key)['TagSet']
+            expected_tag = {'Key': 'uploadedBy', 'Value': 'testuser'}
+            assert expected_tag in tag_set
+            mock_tqdm.assert_called_once_with(total=1000, unit='B', unit_scale=True, desc='upload to s3')
+
+    # clean up dummy file
+    os.remove(source_file_path)
 
