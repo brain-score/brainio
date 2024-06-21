@@ -71,8 +71,15 @@ def upload_to_s3(source_file_path: Union[Path, str], bucket_name: str, target_s3
                                     }
                                )
             # Retrieve newly uploaded object's properties
-            object_properties: dict = client.head_object(Bucket=bucket_name, Key=target_s3_key)
-            return object_properties
+            # object_properties: dict = client.head_object(Bucket=bucket_name, Key=target_s3_key)
+            # return object_properties
+
+            # Temporarily removing AWS get operation which is forbidden for most users
+            # Code will return a version_id of None, to be replaced by user or brain-score admin
+            return {
+                'VersionId': None
+            }
+        
         except Exception as e:
             _logger.error(f"Error uploading file: {e}")
             raise
