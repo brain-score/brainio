@@ -29,3 +29,15 @@ To configure region and output format, create a config file at `~/.aws/config`:
 region = us-east-1
 output-format = json
 ```
+
+
+# For admins: give access rights to new user
+1. log in to the AWS browser console
+2. [navigate to IAM, create new user](https://us-east-1.console.aws.amazon.com/iamv2/home?region=eu-central-1#/users/create) (in `us-east-1`)
+3. for the username, use `<firstname>.<lastname>`, click next
+4. add the user to the `Brain-Score_write` group if you want them to be able to upload new datasets/weights. They should only be able to upload, but not delete
+5. click next, click create user
+6. in the newly created user, go to `Security credentials`
+7. click `Create access key` (use case CLI), click next
+8. leave the tag blank, click `Create access key`
+9. download the access key, send it to the user, along with a link to this file: https://github.com/brain-score/brainio/blob/main/docs/aws_access.md#aws-s3-access

@@ -9,7 +9,7 @@ SOURCE_CATALOG = "source_catalog"
 
 class Catalog(DataFrame):
     # http://pandas.pydata.org/pandas-docs/stable/development/extending.html#subclassing-pandas-data-structures
-    _metadata = pd.DataFrame._metadata + ["identifier", "source_path", "url", "get_loader_class", "from_files"]
+    _metadata = pd.DataFrame._metadata + ["identifier", "url", "get_loader_class", "from_files"]
 
     @property
     def _constructor(self):
@@ -42,7 +42,7 @@ class CatalogLoader:
         catalog = pd.read_csv(self.csv_path)
         catalog = self.cls(catalog)
         catalog.identifier = self.identifier
-        catalog.source_path = self.csv_path
+        catalog.attrs['source_path'] = self.csv_path
         catalog.url = self.url
         return catalog
 
