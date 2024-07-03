@@ -31,6 +31,20 @@ output-format = json
 ```
 
 
+# Model weight upload
+A common use case is to upload model weights once you have access. You can do this via python code, or via the command line.
+
+Upload weights:
+```
+aws s3 sync <local_directory> s3://brainscore-vision/models/<plugin_name>
+```
+
+Check version id:
+```
+rcp aws s3api list-object-versions --bucket brainscore-vision --prefix models/<plugin_name>
+```
+
+
 # For admins: give access rights to new user
 1. log in to the AWS browser console
 2. [navigate to IAM, create new user](https://us-east-1.console.aws.amazon.com/iamv2/home?region=eu-central-1#/users/create) (in `us-east-1`)
