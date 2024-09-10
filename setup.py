@@ -15,7 +15,7 @@ requirements = [
     "numpy",
     "pandas",
     "xarray<2022.6",  # groupby bug was introduced in index refactor: https://github.com/pydata/xarray/issues/6836
-    "netcdf4==1.7.1.post1",
+    "netcdf4",
 ]
 
 setup(
