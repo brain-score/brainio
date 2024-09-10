@@ -1,10 +1,6 @@
 language: python
 matrix:
   include:
-  - name: 3.8 public
-    python: '3.8'
-  - name: 3.9 public
-    python: '3.9'
   - name: 3.11 public
     python: '3.11'
   - name: 3.11 private
@@ -17,7 +13,7 @@ matrix:
 before_install:
 - pip install --upgrade pip
 install:
-- pip install setuptools==60.5.0
+- pip install setuptools
 - pip install .[tests]
 - pip install brainio-test/
 - pip list # list installed package versions
