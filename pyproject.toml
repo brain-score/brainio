@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brainscore-brainio"
+version = "1.0.0"
+description = "Data management for quantitative comparison of brains and brain-inspired systems"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "Jon Prescott-Roy", email = "jjpr@mit.edu"},
+    {name = "Martin Schrimpf", email = "mschrimpf@mit.edu"},
+]
+license = {text = "MIT license"}
+keywords = ["BrainIO"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.11",
+]
+urls = { Homepage = "https://github.com/brain-score/brainio" }
+
+dependencies = [
+    "six",
+    "boto3",
+    "tqdm",
+    "Pillow",
+    "entrypoints",
+    "numpy",
+    "pandas",
+    "xarray<2022.6",  # groupby bug was introduced in index refactor: https://github.com/pydata/xarray/issues/6836
+    "netcdf4",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "imageio",
+    "unittest",
+    "moto",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "brainio-test"]
