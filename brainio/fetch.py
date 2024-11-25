@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import zipfile
+import posixpath
 from pathlib import Path
 
 import boto3
@@ -58,12 +59,12 @@ class BotoFetcher(Fetcher):
         virtual_hosted_style = 's3.' in parsed_url.hostname  # s3. for virtual hosted style; s3- for older AWS
         if virtual_hosted_style:
             self.bucketname = parsed_url.hostname.split(".s3.")[0]
-            self.relative_path = os.path.join(*(split_path))
+            self.relative_path = posixpath.join(*split_path)  # ensure path uses / instead of \
         else:
             self.bucketname = split_path[0]
-            self.relative_path = os.path.join(*(split_path[1:]))
+            self.relative_path = posixpath.join(*split_path[1:])  # ensure path uses / instead of \
         self.extra_args = {"VersionId": version_id} if version_id else None
-        self.output_filename = os.path.join(self.local_dir_path, self.relative_path)
+        self.output_filename = os.path.join(self.local_dir_path, *self.relative_path.split('/'))
         self._logger = logging.getLogger(fullname(self))
 
     def fetch(self):
