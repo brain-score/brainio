@@ -51,7 +51,8 @@ def test_get_metadata():
     assert len(md_all) == 4
     md_coo = list(get_metadata(a, include_indexes=False, include_levels=False))
     assert len(md_coo) == 0
-    md_ind = list(get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
+    md_ind = list(
+        get_metadata(a, include_coords=False, include_indexes=True, include_multi_indexes=True, include_levels=False))
     assert len(md_ind) == 2
     md_lev = list(get_metadata(a, include_coords=False, include_indexes=False))
     assert len(md_lev) == 4
@@ -238,6 +239,19 @@ class TestIndex:
         with pytest.raises(KeyError):
             d.sel(coordB=0)
 
+    def test_float(self):
+        d = DataAssembly([0, 1, 2, 3, 4],
+                         coords={'a': ('a', [0.0, 0.1, 0.2, 0.3, 0.4])},
+                         dims=['a'])
+        assert d.sel(a=0.1) == 1
+
+    def test_float_multiindex(self):
+        d = DataAssembly([0, 1, 2, 3, 4],
+                         coords={'a': ('dim', [0.0, 0.1, 0.2, 0.3, 0.4]),
+                                 'b': ('dim', [1, 2, 3, 4, 5])},
+                         dims=['dim'])
+        assert d.sel(a=0.1) == 1
+
 
 class TestPlainGroupy:
 
@@ -307,8 +321,8 @@ class TestMultiGroupby:
     def test_single_coord(self):
         d = DataAssembly(
             data=[
-                [ 0,  1,  2,  3,  4,  5,  6],
-                [ 7,  8,  9, 10, 11, 12, 13],
+                [0, 1, 2, 3, 4, 5, 6],
+                [7, 8, 9, 10, 11, 12, 13],
                 [14, 15, 16, 17, 18, 19, 20]
             ],
             coords={
@@ -352,16 +366,16 @@ class TestMultiGroupby:
 
     def test_two_coord(self):
         assy = DataAssembly([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]],
-                         coords={'up': ("a", ['alpha', 'alpha', 'beta', 'beta', 'beta', 'beta']),
-                                 'down': ("a", [1, 1, 1, 1, 2, 2]),
-                                 'sideways': ('b', ['x', 'y', 'z'])},
-                         dims=['a', 'b'])
+                            coords={'up': ("a", ['alpha', 'alpha', 'beta', 'beta', 'beta', 'beta']),
+                                    'down': ("a", [1, 1, 1, 1, 2, 2]),
+                                    'sideways': ('b', ['x', 'y', 'z'])},
+                            dims=['a', 'b'])
         assy_grouped = assy.multi_groupby(['up', 'down']).mean(dim="a")
         assy_2 = DataAssembly([[2.5, 3.5, 4.5], [8.5, 9.5, 10.5], [14.5, 15.5, 16.5]],
-                                     coords={'up': ("a", ['alpha', 'beta', 'beta']),
-                                             'down': ("a", [1, 1, 2]),
-                                             'sideways': ('b', ['x', 'y', 'z'])},
-                                     dims=['a', 'b'])
+                              coords={'up': ("a", ['alpha', 'beta', 'beta']),
+                                      'down': ("a", [1, 1, 2]),
+                                      'sideways': ('b', ['x', 'y', 'z'])},
+                              dims=['a', 'b'])
         assert assy_grouped.equals(assy_2)
 
 
@@ -558,7 +572,3 @@ class TestFromFiles:
         assert isinstance(extra, MetadataAssembly)
         assert "stimulus_set" in extra.attrs
         assert extra.shape == (40,)
-
-
-
-
