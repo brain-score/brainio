@@ -39,7 +39,6 @@ dependencies = [
 tests = [
     "pytest",
     "imageio",
-    "unittest",
     "moto",
 ]
 
