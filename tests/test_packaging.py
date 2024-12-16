@@ -61,6 +61,8 @@ def test_reset_index_levels():
     )
     assert assy["a"].variable.level_names == ["up", "down"]
     assy = assy.reset_index(["up", "down"])
+    assert get_levels(assy) == ["sideways"]
+    assy = assy.reset_index(["sideways"])
     assert get_levels(assy) == []
 
 

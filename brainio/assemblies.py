@@ -431,14 +431,36 @@ def get_levels(assembly):
 
 
 def gather_indexes(assembly):
-    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF.  """
+    """This is only necessary as long as xarray cannot persist MultiIndex to netCDF."""
     coords_d = {}
     for dim in assembly.dims:
-        coord_names = list(get_metadata(assembly, dims=(dim,), names_only=True, include_indexes=False, include_levels=False))
+        coord_names = list(
+            get_metadata(
+                assembly,
+                dims=(dim,),
+                names_only=True,
+                include_indexes=False,
+                include_levels=False,
+            )
+        )
         if coord_names:
             coords_d[dim] = coord_names
+
+    # fix single-coord-single-dim
+    to_stack = {}
+    for dim, coords in coords_d.items():
+        if len(coords) == 1 and len(list(get_metadata(assembly, dims=(dim,)))) == 1:
+            to_stack[dim] = coords[0]
+
     if coords_d:
         assembly = assembly.set_index(append=True, **coords_d)
+
+    if to_stack:
+        # single-coord stacking trick
+        for dim, coord in to_stack.items():
+            assembly = assembly.rename({dim: coord})
+            assembly = assembly.stack({dim: [coord]})
+
     return assembly
 
 
