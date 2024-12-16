@@ -63,10 +63,13 @@ class BotoFetcher(Fetcher):
             self.bucketname = split_path[0]
             self.relative_path = os.path.join(*(split_path[1:]))
         self.extra_args = {"VersionId": version_id} if version_id else None
-        self.output_filename = os.path.join(self.local_dir_path, self.relative_path)
+        self.output_filename = os.path.join(self.local_dir_path, os.path.basename(self.relative_path))
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self.output_filename), exist_ok=True)
         self._logger = logging.getLogger(fullname(self))
 
     def fetch(self):
+        # Ensure the directory path for output_filename exists
         if not os.path.exists(self.output_filename):
             self.download_boto()
         return self.output_filename
