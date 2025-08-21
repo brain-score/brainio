@@ -351,7 +351,7 @@ You should now be able to use packaging scripts (with the argument
 
 If terminology is unclear, see the [Glossary](docs/glossary.md).  
 
-If you have questions, [get in touch with us]("mailto:jjpr@mit.edu?subject=BrainIO question).
+If you have questions, [get in touch with us](mailto:jjpr@mit.edu?subject=BrainIO question).
 
 # License
 
