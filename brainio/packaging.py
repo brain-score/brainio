@@ -14,9 +14,9 @@ from PIL import Image
 from tqdm import tqdm
 from xarray import DataArray
 
-from brainio import lookup, list_stimulus_sets, fetch
+from brainio import fetch
 from brainio.fetch import resolve_assembly_class
-from brainio.lookup import TYPE_ASSEMBLY, TYPE_STIMULUS_SET, sha1_hash
+from brainio.lookup import sha1_hash
 
 _logger = logging.getLogger(__name__)
 
@@ -197,21 +197,7 @@ def package_stimulus_set(catalog_name, proto_stimulus_set, stimulus_set_identifi
     zip_object_properties = upload_to_s3(str(target_zip_path), bucket_name, target_s3_key=zip_file_name)
     # link to csv and zip from same identifier. The csv however is the only one of the two rows with a class.
 
-    if catalog_name is not None:
-        lookup.append(
-            catalog_identifier=catalog_name,
-            object_identifier=stimulus_set_identifier, cls='StimulusSet',
-            lookup_type=TYPE_STIMULUS_SET,
-            bucket_name=bucket_name, sha1=csv_sha1, s3_key=csv_file_name,
-            stimulus_set_identifier=None
-        )
-        lookup.append(
-            catalog_identifier=catalog_name,
-            object_identifier=stimulus_set_identifier, cls=None,
-            lookup_type=TYPE_STIMULUS_SET,
-            bucket_name=bucket_name, sha1=stimulus_zip_sha1, s3_key=zip_file_name,
-            stimulus_set_identifier=None
-        )
+    # Catalog functionality has been removed - no longer updating catalogs
     csv_version_id = csv_object_properties['VersionId'] if 'VersionId' in csv_object_properties else None
     zip_version_id = zip_object_properties['VersionId'] if 'VersionId' in zip_object_properties else None
     _logger.debug(f"stimulus set {stimulus_set_identifier} packaged:\n bucket={bucket_name}, csv_sha1={csv_sha1},"
@@ -299,14 +285,7 @@ def package_data_assembly(catalog_identifier, proto_data_assembly, assembly_iden
             netcdf_kf_sha1 = write_netcdf(ex, target_netcdf_path, append=True, group=k)
     object_properties = upload_to_s3(target_netcdf_path, bucket_name, s3_key)
 
-    if catalog_identifier is not None:
-        lookup.append(
-            catalog_identifier=catalog_identifier,
-            object_identifier=assembly_identifier, stimulus_set_identifier=stimulus_set_identifier,
-            lookup_type=TYPE_ASSEMBLY,
-            bucket_name=bucket_name, sha1=netcdf_kf_sha1,
-            s3_key=s3_key, cls=assembly_class_name,
-        )
+    # Catalog functionality has been removed - no longer updating catalogs
     version_id = object_properties['VersionId'] if 'VersionId' in object_properties else None
     _logger.debug(f"assembly {assembly_identifier} packaged:\n, version_id={version_id}, sha1={netcdf_kf_sha1}, "
                   f"bucket_name={bucket_name}, cls={assembly_class_name}")

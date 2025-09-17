@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import xarray as xr
-from brainio import get_assembly
 
 from brainio.assemblies import NeuroidAssembly
 from brainio.transform import subset, index_efficient
