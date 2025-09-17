@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import brainio.assemblies as assemblies
 import brainio.stimuli as stimuli
-from brainio.lookup import lookup_assembly, lookup_stimulus_set, sha1_hash
+from brainio.lookup import sha1_hash
 from brainio.stimuli import StimulusSetLoader
 
 BRAINIO_HOME = 'BRAINIO_HOME'
@@ -157,42 +157,31 @@ def resolve_stimulus_set_class(class_name):
 
 
 def get_assembly(identifier):
-    assembly_lookup = lookup_assembly(identifier)
-    file_path = fetch_file(location_type=assembly_lookup['location_type'],
-                           location=assembly_lookup['location'], sha1=assembly_lookup['sha1'])
-    stimulus_set = get_stimulus_set(assembly_lookup['stimulus_set_identifier'])
-    cls = resolve_assembly_class(assembly_lookup['class'])
-    loader = cls.get_loader_class()(
-        cls=cls,
-        file_path=file_path,
-        stimulus_set_identifier=assembly_lookup['stimulus_set_identifier'],
-        stimulus_set=stimulus_set,
+    """
+    DEPRECATED: The catalog-based assembly loading has been removed.
+    
+    Use direct loading methods instead:
+    - For S3: Use brainscore_vision.data_helpers.s3.load_assembly_from_s3()
+    - For files: Use DataAssembly.from_files()
+    """
+    raise NotImplementedError(
+        "get_assembly() has been deprecated. The catalog system has been removed. "
+        "Use direct loading methods like load_assembly_from_s3() or DataAssembly.from_files() instead."
     )
-    assembly = loader.load()
-    assembly.attrs['identifier'] = identifier
-    return assembly
 
 
 def get_stimulus_set(identifier):
-    csv_lookup, zip_lookup = lookup_stimulus_set(identifier)
-    csv_path = fetch_file(location_type=csv_lookup['location_type'], location=csv_lookup['location'],
-                          sha1=csv_lookup['sha1'])
-    zip_path = fetch_file(location_type=zip_lookup['location_type'], location=zip_lookup['location'],
-                          sha1=zip_lookup['sha1'])
-    stimuli_directory = unzip(zip_path)
-    loader = StimulusSetLoader(
-        csv_path=csv_path,
-        stimuli_directory=stimuli_directory,
-        cls=resolve_stimulus_set_class(csv_lookup['class'])
+    """
+    DEPRECATED: The catalog-based stimulus set loading has been removed.
+    
+    Use direct loading methods instead:
+    - For S3: Use brainscore_vision.data_helpers.s3.load_stimulus_set_from_s3()
+    - For files: Use StimulusSet.from_files()
+    """
+    raise NotImplementedError(
+        "get_stimulus_set() has been deprecated. The catalog system has been removed. "
+        "Use direct loading methods like load_stimulus_set_from_s3() or StimulusSet.from_files() instead."
     )
-    stimulus_set = loader.load()
-    stimulus_set.identifier = identifier
-    # ensure perfect overlap
-    stimuli_paths = [Path(stimuli_directory) / local_path for local_path in os.listdir(stimuli_directory)
-                     if not local_path.endswith('.zip') and not local_path.endswith('.csv')]
-    assert set(stimulus_set.stimulus_paths.values()) == set(stimuli_paths), \
-        "Inconsistency: unzipped stimuli paths do not match csv paths"
-    return stimulus_set
 
 
 def fullname(obj):
